@@ -8,6 +8,8 @@
 
 ## 现在能跑什么
 
+![垂直切片](docs/images/slice-workshop.png)
+
 | 能力 | 状态 | 验证方式 |
 | --- | --- | --- |
 | Godot 工程可启动、无脚本错误 | ✅ | `scripts\check.ps1` · SMOKE OK |
@@ -53,6 +55,10 @@ powershell -ExecutionPolicy Bypass -File scripts\run.ps1 -Run
 - 点底部**窑炉**进入 12 秒烧制：按住「鼓风（按住）」升温，松开降温，把白线压在绿带里拿精品。
 - 烧完回**交付台**点「交付这一单」结算；三单做完弹出「今日打烊」，可再来一天。
 - 调试：`-- shot=D:/x.png` 截一帧、`-- station=kiln` 直开窑炉、`-- roundend` 直开结算面板。
+
+| 烧窑：12 秒火带 | 三单做完的打烊结算 |
+| --- | --- |
+| ![烧窑](docs/images/slice-kiln.png) | ![结算](docs/images/slice-round.png) |
 
 ## 目录
 
