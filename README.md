@@ -3,8 +3,8 @@
 景德镇陶瓷题材的小游戏：捏器型、描纹样、看窑火。Godot 4.7 工程 + Blender 5.2 美术源，
 从旧的三渲二 Web 原型（three.js，仓库 `BMC-Gordon0921/Porcelain_Workshop`）迁移而来。
 
-**状态快照：2026-10-26 · S0「工作区地基」完成 + 美术资产优化一轮。** 当前工程能无头导入全部
-资产、跑通 99 项单元测试、把四个场景与六个工作台的 glTF 加载进引擎；游戏玩法本体尚未开始（S1 起）。
+**状态快照：2026-10-26 · S0 地基 + 美术优化 + 垂直切片可玩。** 古窑一站（3 单）已经能完整跑通
+「捏塑 → 烧窑 → 结算 → 存档」；321 项单元测试全绿。其余三站、图鉴 UI、成就、剧情尚未开始。
 
 ## 现在能跑什么
 
@@ -13,13 +13,14 @@
 | Godot 工程可启动、无脚本错误 | ✅ | `scripts\check.ps1` · SMOKE OK |
 | 四站 glTF 自动导入（134,658 三角面，7.29 MB） | ✅ | `scripts\godot-import.ps1` · IMPORT OK |
 | 六个工作台 glTF（bpy 重建，1.10 MB，四边面 88–100%，与旧版几何逐件比对通过） | ✅ | `scripts\godot-import.ps1` |
-| 核心层单元测试（常量/目录/清单/内容包/资产/工作台） | ✅ 99 项 | `scripts\test.ps1` · TESTS OK |
+| 单元测试（常量/目录/清单/内容包/资产/工作台/捏塑/窑火/切片） | ✅ 321 项 | `scripts\test.ps1` · TESTS OK |
 | Blender → glTF 全自动导出 | ✅ | `scripts\export-art.ps1` |
 | 减面 / 三角转四边（`art/tools/optimize_meshes.py`） | ✅ 减 49.2% | 对照渲染无可见差异 |
 | 112×112 像素画布最近邻放大不糊 | ✅ | AssetLab 场景目视 + 冒烟 |
 | 内容包门控（试玩版 / 完整版同工程双发行） | ✅ 逻辑就绪 | `test_content_pack.gd` |
-| 存档 v1 分区 + 迁移码 | ✅ 框架就绪 | 单元测试未覆盖（S1 补） |
-| 玩法：捏塑/施釉/烧窑/结算/图鉴/成就 | ⬜ 未开始 | — |
+| 存档 v1 分区 + 迁移码 | ✅ 框架就绪 | `test_slice.gd` 校验分区与版本 |
+| **垂直切片：古窑 1 站 × 3 单（捏塑/刮补画/烧窑/结算/存档）** | ✅ 可玩 | `scripts\check.ps1` · SMOKE OK + 截图 |
+| 图鉴 UI / 成就 UI / 剧情 / 其余三站 | ⬜ 未开始 | — |
 | 导出 exe / web | ⛔ 阻塞 | 未装导出模板，见 `docs/00` |
 
 ## 怎么开始
@@ -41,6 +42,18 @@ powershell -ExecutionPolicy Bypass -File scripts\run.ps1
 
 改了 `.glb` / `.csv` / 图片之后，先跑 `scripts\godot-import.ps1` 再跑测试。
 
+## 怎么玩（当前切片）
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\run.ps1 -Run
+```
+
+- 左侧画布：**按住左键拖泥**（揉泥/拉坯台 / 交付台）、**刮刀**修形、**补泥**加料、**画笔**上蓝彩。
+- 青色轮廓是目标器型；右侧实时显示形状分、上色分与总分，80 分过关。
+- 点底部**窑炉**进入 12 秒烧制：按住「鼓风（按住）」升温，松开降温，把白线压在绿带里拿精品。
+- 烧完回**交付台**点「交付这一单」结算；三单做完弹出「今日打烊」，可再来一天。
+- 调试：`-- shot=D:/x.png` 截一帧、`-- station=kiln` 直开窑炉、`-- roundend` 直开结算面板。
+
 ## 目录
 
 ```
@@ -48,7 +61,7 @@ game/                  Godot 工程（唯一需要引擎打开的目录）
   autoload/            Events / Settings / SaveGame / GameState
   core/                常量、内容包门控、资产清单、目录读取、工作台清单
   data/                catalog.json（站点/器物/成就数据）+ Resource 定义
-  scenes/              boot/（自检）、lab/（资产实验室）
+  scenes/              boot/（自检）、lab/（资产实验室）、workshop/（古窑一站可玩）、sculpt/（画布）
   tests/               run_tests.gd + cases/ + framework/
   assets/              models/maps（4 站 glTF）、models/workbenches（6 个工作台）、
                        textures、references、audio、fonts、ui

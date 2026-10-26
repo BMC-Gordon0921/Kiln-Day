@@ -24,9 +24,13 @@ func _ready() -> void:
 
 	if problems.is_empty():
 		# ASCII 标记供无头冒烟脚本 grep（脚本本身是 ASCII-only，无法匹配中文）。
-		print("[Boot] BOOT_OK 自检通过，进入资产实验室")
+		print("[Boot] BOOT_OK 自检通过")
 		# 必须在 _ready 里延后一帧切场景，否则父节点正忙于装载子节点。
-		get_tree().change_scene_to_file.call_deferred("res://scenes/lab/AssetLab.tscn")
+		var next := "res://scenes/workshop/Workshop.tscn"
+		if OS.get_cmdline_user_args().has("lab"):
+			next = "res://scenes/lab/AssetLab.tscn"
+		print("[Boot] 进入 " + next)
+		get_tree().change_scene_to_file.call_deferred(next)
 		return
 
 	for p in problems:

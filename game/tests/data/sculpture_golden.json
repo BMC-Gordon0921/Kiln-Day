@@ -1,0 +1,719 @@
+{
+	"targets": {
+		"band-pot": {
+			"hash": "9e560de1",
+			"counts": [
+				8770,
+				2884,
+				890
+			]
+		},
+		"tall-pot": {
+			"hash": "6a731619",
+			"counts": [
+				9064,
+				2428,
+				1052
+			]
+		},
+		"dot-jar": {
+			"hash": "e2542d61",
+			"counts": [
+				8122,
+				4000,
+				422
+			]
+		},
+		"rim-pot": {
+			"hash": "0974df5d",
+			"counts": [
+				8872,
+				2664,
+				1008
+			]
+		},
+		"moon-jar": {
+			"hash": "29ab3715",
+			"counts": [
+				8550,
+				3048,
+				946
+			]
+		}
+	},
+	"supplied": {
+		"band-pot": {
+			"1": "b627e911",
+			"2": "e88c74cc",
+			"3": "0b17c9ed"
+		},
+		"tall-pot": {
+			"1": "b627e911",
+			"2": "bdbff019",
+			"3": "2f9edacb"
+		},
+		"dot-jar": {
+			"1": "b627e911",
+			"2": "5a3a8e21",
+			"3": "303daa49"
+		},
+		"rim-pot": {
+			"1": "b627e911",
+			"2": "3c70ea1d",
+			"3": "f8a0523d"
+		},
+		"moon-jar": {
+			"1": "b627e911",
+			"2": "28205d6c",
+			"3": "2cc76de3"
+		}
+	},
+	"strokes": [
+		{
+			"name": "band-pot/cut-diagonal",
+			"design": "band-pot",
+			"tool": "cut",
+			"radius": 7,
+			"color": 2,
+			"path": [
+				[
+					30,
+					30
+				],
+				[
+					80,
+					80
+				]
+			],
+			"changed": true,
+			"hash": "2a03212e",
+			"counts": [
+				6251,
+				6293,
+				0
+			]
+		},
+		{
+			"name": "band-pot/cut-wide",
+			"design": "band-pot",
+			"tool": "cut",
+			"radius": 14,
+			"color": 2,
+			"path": [
+				[
+					56,
+					20
+				],
+				[
+					56,
+					90
+				]
+			],
+			"changed": true,
+			"hash": "cfe75d32",
+			"counts": [
+				7627,
+				4917,
+				0
+			]
+		},
+		{
+			"name": "band-pot/add-arc",
+			"design": "band-pot",
+			"tool": "add",
+			"radius": 6,
+			"color": 2,
+			"path": [
+				[
+					40,
+					60
+				],
+				[
+					50,
+					40
+				],
+				[
+					60,
+					60
+				]
+			],
+			"changed": false,
+			"hash": "e88c74cc",
+			"counts": [
+				5145,
+				7399,
+				0
+			]
+		},
+		{
+			"name": "band-pot/paint-band",
+			"design": "band-pot",
+			"tool": "paint",
+			"radius": 5,
+			"color": 2,
+			"path": [
+				[
+					20,
+					56
+				],
+				[
+					92,
+					56
+				]
+			],
+			"changed": true,
+			"hash": "17fbc9fc",
+			"counts": [
+				5145,
+				6599,
+				800
+			]
+		},
+		{
+			"name": "band-pot/paint-white",
+			"design": "band-pot",
+			"tool": "paint",
+			"radius": 9,
+			"color": 1,
+			"path": [
+				[
+					50,
+					30
+				],
+				[
+					50,
+					80
+				]
+			],
+			"changed": false,
+			"hash": "e88c74cc",
+			"counts": [
+				5145,
+				7399,
+				0
+			]
+		},
+		{
+			"name": "dot-jar/cut-diagonal",
+			"design": "dot-jar",
+			"tool": "cut",
+			"radius": 7,
+			"color": 2,
+			"path": [
+				[
+					30,
+					30
+				],
+				[
+					80,
+					80
+				]
+			],
+			"changed": true,
+			"hash": "c2e34337",
+			"counts": [
+				5884,
+				6660,
+				0
+			]
+		},
+		{
+			"name": "dot-jar/cut-wide",
+			"design": "dot-jar",
+			"tool": "cut",
+			"radius": 14,
+			"color": 2,
+			"path": [
+				[
+					56,
+					20
+				],
+				[
+					56,
+					90
+				]
+			],
+			"changed": true,
+			"hash": "321c20bd",
+			"counts": [
+				7250,
+				5294,
+				0
+			]
+		},
+		{
+			"name": "dot-jar/add-arc",
+			"design": "dot-jar",
+			"tool": "add",
+			"radius": 6,
+			"color": 2,
+			"path": [
+				[
+					40,
+					60
+				],
+				[
+					50,
+					40
+				],
+				[
+					60,
+					60
+				]
+			],
+			"changed": false,
+			"hash": "5a3a8e21",
+			"counts": [
+				4778,
+				7766,
+				0
+			]
+		},
+		{
+			"name": "dot-jar/paint-band",
+			"design": "dot-jar",
+			"tool": "paint",
+			"radius": 5,
+			"color": 2,
+			"path": [
+				[
+					20,
+					56
+				],
+				[
+					92,
+					56
+				]
+			],
+			"changed": true,
+			"hash": "3d269061",
+			"counts": [
+				4778,
+				6966,
+				800
+			]
+		},
+		{
+			"name": "dot-jar/paint-white",
+			"design": "dot-jar",
+			"tool": "paint",
+			"radius": 9,
+			"color": 1,
+			"path": [
+				[
+					50,
+					30
+				],
+				[
+					50,
+					80
+				]
+			],
+			"changed": false,
+			"hash": "5a3a8e21",
+			"counts": [
+				4778,
+				7766,
+				0
+			]
+		},
+		{
+			"name": "push/out-right",
+			"design": "band-pot",
+			"kind": "push",
+			"level": 2,
+			"start": [
+				111,
+				56
+			],
+			"path": [
+				[
+					111,
+					56
+				],
+				[
+					120,
+					56
+				]
+			],
+			"firstGrab": {
+				"x": 100.5,
+				"y": 55.5,
+				"horizontal": true,
+				"fromLeft": false
+			},
+			"changed": [
+				true
+			],
+			"hash": "b026dacc",
+			"counts": [
+				4819,
+				7725,
+				0
+			]
+		},
+		{
+			"name": "push/in-left",
+			"design": "band-pot",
+			"kind": "push",
+			"level": 2,
+			"start": [
+				0,
+				56
+			],
+			"path": [
+				[
+					0,
+					56
+				],
+				[
+					8,
+					56
+				]
+			],
+			"firstGrab": {
+				"x": 11.5,
+				"y": 55.5,
+				"horizontal": true,
+				"fromLeft": true
+			},
+			"changed": [
+				true
+			],
+			"hash": "483e2866",
+			"counts": [
+				5433,
+				7111,
+				0
+			]
+		},
+		{
+			"name": "push/up-shoulder",
+			"design": "band-pot",
+			"kind": "push",
+			"level": 3,
+			"start": [
+				30,
+				0
+			],
+			"path": [
+				[
+					30,
+					0
+				],
+				[
+					30,
+					6
+				]
+			],
+			"firstGrab": {
+				"x": 34.5,
+				"y": 15.5,
+				"horizontal": true,
+				"fromLeft": true
+			},
+			"changed": [
+				false
+			],
+			"hash": "0b17c9ed",
+			"counts": [
+				6270,
+				6274,
+				0
+			]
+		},
+		{
+			"name": "push/pinch-neck",
+			"design": "tall-pot",
+			"kind": "push",
+			"level": 3,
+			"start": [
+				109,
+				40
+			],
+			"path": [
+				[
+					109,
+					40
+				],
+				[
+					102,
+					40
+				]
+			],
+			"firstGrab": {
+				"x": 92.5,
+				"y": 45.5,
+				"horizontal": true,
+				"fromLeft": false
+			},
+			"changed": [
+				true
+			],
+			"hash": "880c8669",
+			"counts": [
+				6528,
+				6016,
+				0
+			]
+		},
+		{
+			"name": "push/flat-top",
+			"design": "moon-jar",
+			"kind": "push",
+			"level": 3,
+			"start": [
+				56,
+				0
+			],
+			"path": [
+				[
+					56,
+					0
+				],
+				[
+					56,
+					-6
+				]
+			],
+			"firstGrab": {
+				"x": 55.5,
+				"y": 13.5,
+				"horizontal": false,
+				"fromLeft": true
+			},
+			"changed": [
+				true
+			],
+			"hash": "e5e5bc17",
+			"counts": [
+				5932,
+				6612,
+				0
+			]
+		}
+	],
+	"compares": [
+		{
+			"name": "target-vs-target",
+			"design": "band-pot",
+			"score": 100,
+			"shape": 100,
+			"paint": 100,
+			"passed": true,
+			"missing": 0,
+			"excess": 0,
+			"raw": {
+				"score": 100,
+				"shape": 100,
+				"paint": 100,
+				"passed": true,
+				"missing": 0,
+				"excess": 0
+			}
+		},
+		{
+			"name": "blank-vs-target",
+			"design": "band-pot",
+			"score": 34.1,
+			"shape": 39.9,
+			"paint": 23.3,
+			"passed": false,
+			"missing": 0,
+			"excess": 5670,
+			"raw": {
+				"score": 34.1,
+				"shape": 39.9,
+				"paint": 23.3,
+				"passed": false,
+				"missing": 0,
+				"excess": 5670
+			}
+		},
+		{
+			"name": "supplied2-vs-target",
+			"design": "band-pot",
+			"score": 42.9,
+			"shape": 51,
+			"paint": 28,
+			"passed": false,
+			"missing": 0,
+			"excess": 3625,
+			"raw": {
+				"score": 42.9,
+				"shape": 51,
+				"paint": 28,
+				"passed": false,
+				"missing": 0,
+				"excess": 3625
+			}
+		},
+		{
+			"name": "supplied3-vs-target",
+			"design": "tall-pot",
+			"score": 45.8,
+			"shape": 55.5,
+			"paint": 27.9,
+			"passed": false,
+			"missing": 0,
+			"excess": 2786,
+			"raw": {
+				"score": 45.8,
+				"shape": 55.5,
+				"paint": 27.9,
+				"passed": false,
+				"missing": 0,
+				"excess": 2786
+			}
+		},
+		{
+			"name": "blank-vs-dot-jar",
+			"design": "dot-jar",
+			"score": 40.8,
+			"shape": 46.8,
+			"paint": 29.7,
+			"passed": false,
+			"missing": 0,
+			"excess": 5022,
+			"raw": {
+				"score": 40.8,
+				"shape": 46.8,
+				"paint": 29.7,
+				"passed": false,
+				"missing": 0,
+				"excess": 5022
+			}
+		},
+		{
+			"name": "painted-vs-band-pot",
+			"design": "band-pot",
+			"score": 53.5,
+			"shape": 60.1,
+			"paint": 41.1,
+			"passed": false,
+			"missing": 0,
+			"excess": 2500,
+			"raw": {
+				"score": 53.5,
+				"shape": 60.1,
+				"paint": 41.1,
+				"passed": false,
+				"missing": 0,
+				"excess": 2500
+			}
+		},
+		{
+			"name": "carved-vs-moon-jar",
+			"design": "moon-jar",
+			"score": 53.1,
+			"shape": 64,
+			"paint": 32.8,
+			"passed": false,
+			"missing": 0,
+			"excess": 2240,
+			"raw": {
+				"score": 53.1,
+				"shape": 64,
+				"paint": 32.8,
+				"passed": false,
+				"missing": 0,
+				"excess": 2240
+			}
+		}
+	],
+	"edges": [
+		{
+			"design": "band-pot",
+			"x": 30,
+			"y": 56,
+			"radius": 18,
+			"result": {
+				"x": 15.5,
+				"y": 55.5,
+				"horizontal": true,
+				"fromLeft": true
+			}
+		},
+		{
+			"design": "band-pot",
+			"x": 70,
+			"y": 56,
+			"radius": 18,
+			"result": null
+		},
+		{
+			"design": "band-pot",
+			"x": 56,
+			"y": 30,
+			"radius": 18,
+			"result": {
+				"x": 55.5,
+				"y": 14.5,
+				"horizontal": false,
+				"fromLeft": true
+			}
+		},
+		{
+			"design": "band-pot",
+			"x": 56,
+			"y": 80,
+			"radius": 18,
+			"result": null
+		},
+		{
+			"design": "band-pot",
+			"x": 5,
+			"y": 5,
+			"radius": 18,
+			"result": null
+		},
+		{
+			"design": "tall-pot",
+			"x": 30,
+			"y": 56,
+			"radius": 18,
+			"result": {
+				"x": 19.5,
+				"y": 55.5,
+				"horizontal": true,
+				"fromLeft": true
+			}
+		},
+		{
+			"design": "tall-pot",
+			"x": 70,
+			"y": 56,
+			"radius": 18,
+			"result": null
+		},
+		{
+			"design": "tall-pot",
+			"x": 56,
+			"y": 30,
+			"radius": 18,
+			"result": null
+		},
+		{
+			"design": "tall-pot",
+			"x": 56,
+			"y": 80,
+			"radius": 18,
+			"result": null
+		},
+		{
+			"design": "tall-pot",
+			"x": 5,
+			"y": 5,
+			"radius": 18,
+			"result": null
+		}
+	],
+	"blank": {
+		"hash": "b627e911",
+		"counts": [
+			3100,
+			9444,
+			0
+		]
+	}
+}

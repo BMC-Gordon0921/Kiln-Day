@@ -302,9 +302,49 @@ Godot 用 CSV 翻译表：`i18n/zh.csv` + `i18n/en.csv`，列是 `keys,zh,en`，
 - 用例：`extends RefCounted` + `run(report: TestReport)`，纯逻辑、无随机、无等待。
 - `tests/framework/test_report.gd` 提供 `eq / ok / error`，末尾汇总打印
   `通过 N，失败 M` 和 `ALL TESTS PASSED`（或 `TESTS FAILED: N`）。
-- 当前 43 项断言、4 个套件：`test_constants`（关键数值与 `reward_for_score` 边界，含 NaN）、
+- 当前 **321 项断言、10 个套件**（`test_constants`、`test_catalog`、`test_manifest`、`test_content_pack`、`test_assets`、`test_sculpture`、`test_workshop`、`test_slice` 等）：`test_constants`（关键数值与 `reward_for_score` 边界，含 NaN）、
   `test_catalog`（真实 `catalog.json` 通过校验 + 故意构造的坏数据被拒）、
   `test_manifest`（4 个 glTF 文件存在、bounds/groundY/batches 合法）、
   `test_content_pack`（demo 与 full 的站点数、图鉴上限、迁移码开关）。
 - 需要场景树的集成测试放 `tests/integration/`，另开入口 —— **不要**混进无头入口，
   否则 CI 会随机挂。
+- 与旧版 JS 的等价性靠 golden：`art/tools/golden_sculpture.mjs`、`golden_workshop.mjs`
+  直接 import `legacy/web-demo/src/*.js` 生成 JSON 向量（`game/tests/data/`），
+  GDScript 侧逐值对拍。**这是「移植没走样」的唯一证据**，改算法必须重新生成。
+
+## 13. 垂直切片：古窑一站（可玩）
+
+第一个可玩版本只做**古窑一站 × 三个订单**，验证「捏塑 → 烧窑 → 结算 → 存档」这条主链。
+
+```
+game/scenes/workshop/Workshop.tscn （只有根节点 + workshop.gd，其余在代码里建）
+├── _build_3d()   六台工作台 GLB（按 tier 隐藏升级件）、地面、单向平行光、固定机位
+├── _build_hud()  CanvasLayer + Control：顶栏 / 像素画布 / 右侧要求面板 /
+│                 窑炉面板（HeatBar）/ 打烊结算面板 / 底部六个工位按钮
+└── _start_order()  从 catalog.json 取本单器型 → SculptSession → 画布
+```
+
+| 文件 | 职责 |
+| --- | --- |
+| `game/core/sculpt_session.gd` | 一单的可变状态：像素、工具、撤销栈、计时；`to_dict/from_dict` 可存档 |
+| `game/core/kiln_run.gd` | 12 秒烧制：热度、带内计时、`grade()` |
+| `game/scenes/sculpt/sculpt_canvas.gd` | 112×112 `ImageTexture` 最近邻放大 + 青色目标幽灵层 + 鼠标/触摸转像素坐标 |
+| `game/scenes/workshop/heat_bar.gd` | 火带可视化：绿=完美、黄=良好、白线=当前热度 |
+| `game/scenes/workshop/workshop.gd` | 场景装配、订单流程、HUD 更新、结算与存档写盘 |
+
+**数据流**：`catalog.json` → `SculptSession(design_id)` → `SculptCanvas` 显示；
+笔画回写 `session.pixels` → `Sculpture.compare()` 出分 → `KilnRun` 出评级 →
+`Workshop.order_income()` 出铜钱 → `GameState.add_coins/discover` → `SaveGame.save_game()` →
+`Events.sculpture_finished/item_sold`。
+
+**调试参数**（`--` 之后传，配合 `scripts/run.ps1 -Run`）：
+
+| 参数 | 作用 |
+| --- | --- |
+| `shot=<绝对路径>` | 跑 40 帧存 PNG 后退出（非 headless 才有画面） |
+| `station=kiln` | 启动即打开窑炉面板（截图/调试用） |
+| `roundend` | 直接弹出「今日打烊」结算面板 |
+| `lab` | 进资产实验室而不是工作坊 |
+
+**逐站复制**：换站只需改 `_start_order()` 里的站点取数和场景背景，`SculptSession` /
+`KilnRun` / 结算公式都不用动。别为第二站复制一份新脚本 —— 抽参数，不抄文件。

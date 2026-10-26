@@ -1,5 +1,5 @@
 # Smoke test: run the main scene headless for a few frames and confirm Boot
-# finished its self-check and AssetLab actually loaded glTF geometry.
+# finished its self-check and the workshop scene came up.
 # Usage: powershell -ExecutionPolicy Bypass -File scripts\smoke.ps1
 
 $ErrorActionPreference = 'Stop'
@@ -12,10 +12,15 @@ $result = Invoke-Godot -GodotArgs @(
 Write-Host ("godot smoke exit={0}  log={1}" -f $result.ExitCode, $result.Log)
 
 $bootOk      = Test-LogMarker -Path $result.Log -Pattern 'BOOT_OK'
-$loaded      = Test-LogMarker -Path $result.Log -Pattern 'ASSETLAB_OK'
+$workshopOk  = Test-LogMarker -Path $result.Log -Pattern 'WORKSHOP_OK'
 $scriptError = Test-LogMarker -Path $result.Log -Pattern 'SCRIPT ERROR'
 
-if ($bootOk -and $loaded -and (-not $scriptError) -and $result.ExitCode -eq 0) {
+$labResult = Invoke-Godot -GodotArgs @(
+    '--headless', '--path', $GameDir, '--quit-after', '120', '--', 'lab'
+) -LogName 'godot-smoke-lab.log'
+$labOk = Test-LogMarker -Path $labResult.Log -Pattern 'ASSETLAB_OK'
+
+if ($bootOk -and $workshopOk -and $labOk -and (-not $scriptError) -and $result.ExitCode -eq 0) {
     Get-LogTail -Path $result.Log -Lines 3
     Write-Host 'SMOKE OK'
     exit 0
