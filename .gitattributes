@@ -1,0 +1,22 @@
+* text=auto eol=lf
+
+*.blend binary
+*.glb binary
+*.gltf binary
+*.wav binary
+*.ogg binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.docx binary
+*.woff2 binary
+*.pck binary
+
+*.gd text eol=lf
+*.tscn text eol=lf
+*.tres text eol=lf
+*.godot text eol=lf
+*.cfg text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.ps1 text eol=lf

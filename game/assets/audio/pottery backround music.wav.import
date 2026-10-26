@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://cx1k2fx1eyooo"
+path="res://.godot/imported/pottery backround music.wav-28efe79d3ffdf8f231d93be979668c37.sample"
+
+[deps]
+
+source_file="res://assets/audio/pottery backround music.wav"
+dest_files=["res://.godot/imported/pottery backround music.wav-28efe79d3ffdf8f231d93be979668c37.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

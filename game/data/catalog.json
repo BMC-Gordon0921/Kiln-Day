@@ -1,0 +1,109 @@
+{
+  "schema": 1,
+  "note": "数据源自旧版 src/places.js 与 src/sculpture.js 的 PRESETS；S2 会与 golden 用例逐值核对。",
+  "sites": [
+    {
+      "id": "guyao",
+      "name": "古窑民俗博览区",
+      "short": "古窑民俗",
+      "chapter": "古窑 · 窑火初见",
+      "tag": "古窑 · 制瓷 · 传承",
+      "workshop": "古窑手作坊",
+      "decal": "青花缠枝纹",
+      "stamp": "窑火",
+      "color": "#995637",
+      "map_point": [606, 188],
+      "scene": "guyao",
+      "architecture": "砖窑、烟囱、灰瓦坡顶与木制晾坯架"
+    },
+    {
+      "id": "museum",
+      "name": "中国陶瓷博物馆",
+      "short": "陶瓷博物馆",
+      "chapter": "博物馆 · 瓷光入藏",
+      "tag": "展馆 · 玲珑 · 光影",
+      "workshop": "博物馆体验工坊",
+      "decal": "玲珑白瓷纹",
+      "stamp": "瓷光",
+      "color": "#457b89",
+      "map_point": [821, 447],
+      "scene": "museum",
+      "architecture": "现代展馆、玻璃幕墙、陈列柜与青花大瓶"
+    },
+    {
+      "id": "imperial",
+      "name": "御窑厂国家考古遗址公园",
+      "short": "御窑厂遗址",
+      "chapter": "御窑 · 御窑寻色",
+      "tag": "遗址 · 拱券 · 流釉",
+      "workshop": "御窑遗址研习坊",
+      "decal": "红金窑变纹",
+      "stamp": "御色",
+      "color": "#aa553f",
+      "map_point": [266, 511],
+      "scene": "imperial",
+      "architecture": "红砖拱券、残墙、考古探方与旧窑基座"
+    },
+    {
+      "id": "taoxichuan",
+      "name": "陶溪川文创街区",
+      "short": "陶溪川",
+      "chapter": "陶溪川 · 花开陶溪",
+      "tag": "厂房 · 市集 · 新生",
+      "workshop": "陶溪川创意工坊",
+      "decal": "粉彩花瓣纹",
+      "stamp": "花开",
+      "color": "#9d6179",
+      "map_point": [452, 718],
+      "scene": "taoxichuan",
+      "architecture": "红砖厂房、锯齿屋顶、高烟囱与文创市集"
+    }
+  ],
+  "items": [
+    {
+      "id": "band-pot",
+      "name": "一抹青花罐",
+      "customer": "Mabel",
+      "species": "rabbit",
+      "task": "把瓷泥做成圆润的罐子，在中间画一条宽宽的蓝色横带，其余保持白色。",
+      "hint": "横带保持平整，上下留出白色。"
+    },
+    {
+      "id": "tall-pot",
+      "name": "双环青花瓶",
+      "customer": "Bramble",
+      "species": "bear",
+      "task": "做一个细高、短颈的白瓷瓶，在瓶身画两条宽蓝色横带。",
+      "hint": "两条横带中间留出清楚的白色间隔。"
+    },
+    {
+      "id": "dot-jar",
+      "name": "三点青花坛",
+      "customer": "Clover",
+      "species": "cat",
+      "task": "做一个宽肚瓷坛，在白色瓶身的中间画三个大蓝点。",
+      "hint": "用中等画笔，分别画出三个圆点。"
+    },
+    {
+      "id": "rim-pot",
+      "name": "蓝沿瓷罐",
+      "customer": "Juniper",
+      "species": "bear",
+      "task": "把罐口做宽、底部收窄，再沿顶部画一圈宽蓝边。",
+      "hint": "只需要在宽罐口上画一条厚实的蓝边。"
+    },
+    {
+      "id": "moon-jar",
+      "name": "青带月光罐",
+      "customer": "Hazel",
+      "species": "rabbit",
+      "task": "做一个短颈的圆形月光罐，在瓶身画两条宽的竖向蓝带。",
+      "hint": "两条蓝带中间留出一条白色区域。"
+    }
+  ],
+  "achievements": [
+    { "id": "first-fire", "name": "第一窑", "desc": "完成第一次烧窑", "stat": "kiln_open", "count": 1 },
+    { "id": "perfect-fire", "name": "窑火如心", "desc": "烧出一次完美", "stat": "fire_perfect", "count": 1 },
+    { "id": "all-sites", "name": "瓷路走遍", "desc": "走完全部站点", "stat": "site_visit", "count": 4 }
+  ]
+}
