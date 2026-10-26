@@ -54,7 +54,7 @@ art/
   export/              export-blender-scenes.py（blend → glb + manifest.json）
 legacy/                旧 three.js 版本只读副本（git 忽略，见 docs/00）
 scripts/               verify / import / test / smoke / run / export-art / check
-docs/                  00 环境 · 01 架构与资产管线 · 02 模块路线图 · 03 潜力评估 · 04 规范
+docs/                  00 环境 · 01 架构与资产管线 · 02 模块路线图 · 03 潜力评估 · 04 规范 · 05 计划归档
 .local/                Godot 的 user:// 重定向与临时文件（git 忽略，可随时删）
 ```
 
@@ -75,3 +75,4 @@ docs/                  00 环境 · 01 架构与资产管线 · 02 模块路线�
 - [模块路线图](docs/02-模块路线图.md) — 13 个模块的阶段、依赖与首发范围
 - [开发潜力评估](docs/03-开发潜力评估.md) — 这事儿值不值得做、做多大、怎么验证
 - [工程规范](docs/04-工程规范.md) — 命名、测试、提交、日志标记
+- [计划 v4（归档）](docs/05-计划v4-模块扩展与双发行.md) — 已批准执行的原始计划，含"当初为什么这样定"
