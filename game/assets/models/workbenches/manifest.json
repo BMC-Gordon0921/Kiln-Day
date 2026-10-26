@@ -1,0 +1,156 @@
+{
+  "generator": "art/export/build-workbenches.py",
+  "units": "meters",
+  "workbenches": {
+    "clay": {
+      "objects": 25,
+      "faces": 1622,
+      "triangles": 3116,
+      "quads": 1426,
+      "ngons": 4,
+      "tiers": {
+        "base": 16,
+        "upgrade1": 4,
+        "upgrade2": 5
+      },
+      "bounds": {
+        "min": [
+          -1.1,
+          0.0,
+          -0.7
+        ],
+        "max": [
+          1.1,
+          2.17,
+          0.7
+        ]
+      },
+      "file": "clay.glb"
+    },
+    "wheel": {
+      "objects": 36,
+      "faces": 1926,
+      "triangles": 3916,
+      "quads": 1922,
+      "ngons": 4,
+      "tiers": {
+        "base": 10,
+        "upgrade1": 21,
+        "upgrade2": 5
+      },
+      "bounds": {
+        "min": [
+          -0.9,
+          0.0,
+          -0.7
+        ],
+        "max": [
+          0.92,
+          2.015,
+          0.81
+        ]
+      },
+      "file": "wheel.glb"
+    },
+    "carve": {
+      "objects": 21,
+      "faces": 1116,
+      "triangles": 2296,
+      "quads": 1112,
+      "ngons": 4,
+      "tiers": {
+        "base": 12,
+        "upgrade1": 5,
+        "upgrade2": 4
+      },
+      "bounds": {
+        "min": [
+          -1.1,
+          0.0,
+          -0.7
+        ],
+        "max": [
+          1.1,
+          2.335,
+          0.775
+        ]
+      },
+      "file": "carve.glb"
+    },
+    "paint": {
+      "objects": 26,
+      "faces": 1066,
+      "triangles": 2516,
+      "quads": 1042,
+      "ngons": 24,
+      "tiers": {
+        "base": 11,
+        "upgrade1": 11,
+        "upgrade2": 4
+      },
+      "bounds": {
+        "min": [
+          -1.1,
+          0.0,
+          -0.7
+        ],
+        "max": [
+          1.1,
+          2.33,
+          0.7
+        ]
+      },
+      "file": "paint.glb"
+    },
+    "serve": {
+      "objects": 19,
+      "faces": 1164,
+      "triangles": 2328,
+      "quads": 1164,
+      "ngons": 0,
+      "tiers": {
+        "base": 10,
+        "upgrade1": 3,
+        "upgrade2": 6
+      },
+      "bounds": {
+        "min": [
+          -0.6,
+          0.0,
+          -1.5
+        ],
+        "max": [
+          0.6,
+          2.745,
+          1.5
+        ]
+      },
+      "file": "serve.glb"
+    },
+    "kiln": {
+      "objects": 58,
+      "faces": 3143,
+      "triangles": 6469,
+      "quads": 3098,
+      "ngons": 13,
+      "tiers": {
+        "base": 40,
+        "upgrade1": 10,
+        "upgrade2": 8
+      },
+      "bounds": {
+        "min": [
+          -1.175,
+          0.0,
+          -1.05
+        ],
+        "max": [
+          1.175,
+          3.15,
+          1.08
+        ]
+      },
+      "file": "kiln.glb"
+    }
+  }
+}

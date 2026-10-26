@@ -3,17 +3,19 @@
 景德镇陶瓷题材的小游戏：捏器型、描纹样、看窑火。Godot 4.7 工程 + Blender 5.2 美术源，
 从旧的三渲二 Web 原型（three.js，仓库 `BMC-Gordon0921/Porcelain_Workshop`）迁移而来。
 
-**状态快照：2026-10-26 · S0「工作区地基」完成。** 当前工程能无头导入全部资产、跑通 43 项单元测试、
-把四个场景 glTF 加载进引擎；游戏玩法本体尚未开始（S1 起）。
+**状态快照：2026-10-26 · S0「工作区地基」完成 + 美术资产优化一轮。** 当前工程能无头导入全部
+资产、跑通 99 项单元测试、把四个场景与六个工作台的 glTF 加载进引擎；游戏玩法本体尚未开始（S1 起）。
 
 ## 现在能跑什么
 
 | 能力 | 状态 | 验证方式 |
 | --- | --- | --- |
 | Godot 工程可启动、无脚本错误 | ✅ | `scripts\check.ps1` · SMOKE OK |
-| 四站 glTF 自动导入（265,072 三角面） | ✅ | `scripts\godot-import.ps1` · IMPORT OK |
-| 核心层单元测试（常量/目录/清单/内容包/数据定义） | ✅ 43 项 | `scripts\test.ps1` · TESTS OK |
-| Blender → glTF 全自动导出，与原资源逐字节一致 | ✅ | `scripts\export-art.ps1` |
+| 四站 glTF 自动导入（134,658 三角面，7.29 MB） | ✅ | `scripts\godot-import.ps1` · IMPORT OK |
+| 六个工作台 glTF（bpy 重建，1.14 MB，四边面 88–100%） | ✅ | `scripts\godot-import.ps1` |
+| 核心层单元测试（常量/目录/清单/内容包/资产/工作台） | ✅ 99 项 | `scripts\test.ps1` · TESTS OK |
+| Blender → glTF 全自动导出 | ✅ | `scripts\export-art.ps1` |
+| 减面 / 三角转四边（`art/tools/optimize_meshes.py`） | ✅ 减 49.2% | 对照渲染无可见差异 |
 | 112×112 像素画布最近邻放大不糊 | ✅ | AssetLab 场景目视 + 冒烟 |
 | 内容包门控（试玩版 / 完整版同工程双发行） | ✅ 逻辑就绪 | `test_content_pack.gd` |
 | 存档 v1 分区 + 迁移码 | ✅ 框架就绪 | 单元测试未覆盖（S1 补） |
@@ -44,14 +46,16 @@ powershell -ExecutionPolicy Bypass -File scripts\run.ps1
 ```
 game/                  Godot 工程（唯一需要引擎打开的目录）
   autoload/            Events / Settings / SaveGame / GameState
-  core/                常量、内容包门控、资产清单、目录读取
+  core/                常量、内容包门控、资产清单、目录读取、工作台清单
   data/                catalog.json（站点/器物/成就数据）+ Resource 定义
   scenes/              boot/（自检）、lab/（资产实验室）
   tests/               run_tests.gd + cases/ + framework/
-  assets/              models/maps（4 站 glTF）、textures、references、audio、fonts、ui
+  assets/              models/maps（4 站 glTF）、models/workbenches（6 个工作台）、
+                       textures、references、audio、fonts、ui
 art/
-  blender/             4 个 .blend 源文件（美术的编辑现场）
-  export/              export-blender-scenes.py（blend → glb + manifest.json）
+  blender/             母版 .blend：4 站场景 + workbenches/ + clean/（四边面版）+ opt/（减面版）
+  export/              export-blender-scenes.py、build-workbenches.py
+  tools/               optimize_meshes.py、render_previews.py、mesh_stats.py、blend_stats.py
 legacy/                旧 three.js 版本只读副本（git 忽略，见 docs/00）
 scripts/               verify / import / test / smoke / run / export-art / check
 docs/                  00 环境 · 01 架构与资产管线 · 02 模块路线图 · 03 潜力评估 · 04 规范 · 05 计划归档

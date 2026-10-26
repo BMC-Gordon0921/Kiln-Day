@@ -141,16 +141,17 @@ AssetLab 同时是两条管线的验收场：3D（glTF 能不能装进引擎）�
 ## 8. 资产管线：Blender → glTF → Godot
 
 ```
-art/blender/01-guyao.blend ─┐
-02-museum.blend             ├─ art/export/export-blender-scenes.py ─→ game/assets/models/maps/*.glb
-03-imperial.blend           │                                        + manifest.json
-04-taoxichuan.blend         ┘
+art/blender/opt/0X-*.blend ─┐
+                            ├─ art/export/export-blender-scenes.py ─→ game/assets/models/maps/*.glb
+                            │                                          + manifest.json
+art/blender/workbenches/*.blend ─ art/export/build-workbenches.py ──→ game/assets/models/workbenches/*.glb
 ```
 
 一条命令：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\export-art.ps1
+powershell -ExecutionPolicy Bypass -File scripts\export-art.ps1 -BlendDir art\blender\opt   # 从减面版重导
 powershell -ExecutionPolicy Bypass -File scripts\godot-import.ps1   # 让 Godot 重新导入
 ```
 
@@ -164,19 +165,45 @@ powershell -ExecutionPolicy Bypass -File scripts\godot-import.ps1   # 让 Godot 
 5. 导出 GLB（`export_cameras=False, export_lights=False`，相机灯光由 Godot 自己打）；
 6. 写 `manifest.json`。
 
-### 已验证的导出结果（2026-10-26 实测）
+### 已验证的导出结果（2026-10-26 实测，优化后）
 
-| 站点 | 三角面 | batches | 垂直跨度（模型本身 y 从 -1.275 起） |
+| 站点 | 三角面 | batches | 垂直跨度（模型本身 y 从 -1.275 起） | GLB 体积 |
+| --- | --- | --- | --- | --- |
+| guyao | 35,076 | 30 | 6.883 | 1.93 MB |
+| museum | 27,670 | 26 | 5.130 | 1.52 MB |
+| imperial | 25,380 | 31 | 5.332 | 1.30 MB |
+| taoxichuan | 46,532 | 32 | 7.483 | 2.54 MB |
+| **合计** | **134,658** | 119 | — | **7.29 MB** |
+
+优化前的原始值是 265,072 三角面 / 16.6 MB（减面 **-49.2%**，体积 **-56%**），
+原文件备份在 `.local/tmp/maps-original/`（不进 git）。视觉核验见
+`.local/tmp/maps-before/` 与 `.local/tmp/maps-optimized/` 的对照渲染。
+
+导出的 4 个 GLB 与旧版 `public/models/maps/*.glb` **逐字节一致**（文件大小 delta = 0），
+说明 `art/export/export-blender-scenes.py` 与旧 `tools/export-blender-scenes.py` 等价 ——
+改脚本后可以这样回归：`scripts\export-art.ps1 -Out .local\tmp\glb-check` 再比文件大小和
+`manifest.json` 的 bounds。
+
+### 减面与四边面流程（`art/tools/optimize_meshes.py`）
+
+母版 `.blend` **本身已经是四边面为主**（guyao 68.3% quad），265k 是 glTF 三角化后的数字，
+不是建模面数虚高。所以减面只能靠 decimate，脚本提供两条独立产物：
+
+| 产物 | 命令 | 用途 | 结果 |
 | --- | --- | --- | --- |
-| guyao | 69,580 | 30 | 6.883 |
-| museum | 54,828 | 26 | 5.130 |
-| imperial | 47,534 | 31 | 5.332 |
-| taoxichuan | 93,130 | 32 | 7.483 |
-| **合计** | **265,072** | 119 | — |
+| `art/blender/clean/*.blend` | `--mode none` | 美术继续编辑的干净母版 | 焊接 + 三角转四边，四边率 68.3→78.8 / 70.7→79.8 / 61.9→75.5 / 74.8→82.4% |
+| `art/blender/opt/*.blend` | `--mode collapse --ratio 0.5 --min_faces 8` | 游戏内实际加载 | 三角面 265,072→134,658 |
 
-重导出的 4 个 GLB 与仓库里的**逐字节一致**（文件大小 delta = 0），说明管线和旧版
-`tools/export-blender-scenes.py` 等价 —— 以后改脚本后可以用这个方法回归：
-`scripts\export-art.ps1 -Out .local\tmp\glb-check` 再比文件大小和 `manifest.json` 的 bounds。
+要点：
+- `bmesh.ops.decimate` **不存在**；减面必须用 `DECIMATE` 修改器 + `evaluated_get()`
+  烘出新 mesh，逐对象做（1200 个对象不能用 `bpy.ops`）。
+- 纯 planar dissolve 对场景几乎无效（-0.9%）：场景是几千个互不相连的小图元，
+  跨不过 loose parts。
+- `join_triangles` 只在同材质槽内合并三角形，所以 collapse 后四边率只能回到 ~35%；
+  要高四边率就用 `clean/` 版本。
+- 减面会牺牲细节，`--min_faces 48` 太保守（只 -17%）。默认 8 是实测手感与体积的平衡点，
+  近景需要更精细时按站点单独调 `--ratio`。
+
 
 **batches 就是 Godot 里的 draw call 数**（每个 batch 一种材质）。这是当前最主要的性能指标，
 比三角面更重要。加新建筑时优先复用已有材质名，能合进现有 batch。
@@ -190,7 +217,35 @@ powershell -ExecutionPolicy Bypass -File scripts\godot-import.ps1   # 让 Godot 
 | `groundY` | 地面高度（0.09，全站统一），摆放时用它落地 |
 | `chimney` | `{x, y, z}` 烟囱顶部锚点，只有 guyao / taoxichuan 有；将来做炊烟/开窑镜头的机位参考 |
 | `batches` | 合并后的批次数 = draw call 数 |
-| `triangles` | 三角面总数（本次新增，S1 性能基线用） |
+| `triangles` | 三角面总数（S1 性能基线用） |
+| `source` | 生成这份 GLB 的 `.blend`（`art/blender/opt/...`），便于追溯 |
+
+### 工作台模型（`game/assets/models/workbenches/`）
+
+旧版六个工作台**不是模型文件**，而是 `legacy/web-demo/src/workbench-model.js` 里用
+`RoundedBoxGeometry` / `CylinderGeometry` / `LatheGeometry` 程序化拼出来的（窑另在
+`kiln-view.js`）。所以这里是按同一套参数用 bpy **重建**，不是格式转换：
+
+| 工作台 | objects | faces | 三角面 | 四边面占比 |
+| --- | --- | --- | --- | --- |
+| clay | 25 | 1,622 | 3,116 | 87.9% |
+| wheel | 36 | 1,926 | 3,916 | 99.8% |
+| carve | 21 | 1,116 | 2,160 | 99.6% |
+| paint | 26 | 1,066 | 2,006 | 97.7% |
+| serve | 19 | 1,164 | 2,270 | 100% |
+| kiln | 58 | 3,143 | 6,254 | 98.6% |
+
+约定：
+- 三个 collection = 三个层级，节点带自定义属性 `tier`（`base` / `upgrade1` / `upgrade2`），
+  导出时 `export_extras=True` 才带得进 GLB。显示规则见 `core/workbench_assets.gd`
+  的 `tier_visible(tier, level)`。
+- 坐标：three.js `(x, y, z)` → Blender `(x, -z, y)`，脚本里用
+  `SWIZZLE = Matrix(((1,0,0,0),(0,0,-1,0),(0,1,0,0),(0,0,0,1)))` 统一变换后再建 mesh，
+  导出 `export_yup=True`，回到 Godot 就是原来的朝向。
+- 重跑：`blender -b --python art/export/build-workbenches.py`，产物 = 6 个 `.blend`
+  （`art/blender/workbenches/`）+ 6 个 `.glb` + `manifest.json`。
+- 火焰**不在模型里**，Godot 侧用 `GPUParticles3D` 做，窑门上的位置由 manifest 的
+  `bounds` 推算。
 
 ## 9. 像素画布管线（游玩的核心表现）
 
