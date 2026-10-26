@@ -29,6 +29,7 @@ void fragment() {
 var world: SiteWorld
 var world_view: SubViewportContainer
 var world_viewport: SubViewport
+var labels: WorldLabels
 var hud: CanvasLayer
 var debug_label: Label
 
@@ -80,6 +81,11 @@ func _build_world() -> void:
 	world = SiteWorld.new()
 	world.name = "SiteWorld"
 	world_viewport.add_child(world)
+
+	labels = WorldLabels.new()
+	labels.name = "StationLabels"
+	container.add_child(labels)
+	labels.setup(world)
 
 
 ## Keep the 3D viewport inside the same rectangle as the legacy #world-wrap.

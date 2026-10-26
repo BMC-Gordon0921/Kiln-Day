@@ -50,6 +50,7 @@ func build() -> void:
 	_build_lights()
 	_build_site()
 	_build_benches()
+	_build_cast()
 	_build_camera()
 	if camera:
 		camera.apply()
@@ -113,6 +114,37 @@ func _build_benches() -> void:
 		content.add_child(root)
 		bench_roots[id] = root
 		apply_bench_level(_bench_level)
+
+
+## Characters and the signboard are procedural in the legacy build, so they are
+## rebuilt here instead of being imported.
+func _build_cast() -> void:
+	var accent := Color("8aa78d")
+	var catalog := Catalog.load_catalog()
+	var site := Catalog.site(catalog, SITE_ID)
+	if site.has("color"):
+		accent = Color(str(site["color"]))
+	SiteProps.build_sign(content, "古窑手作坊", accent)
+
+	var cast := Node3D.new()
+	cast.name = "Cast"
+	content.add_child(cast)
+
+	var sculptor := SiteProps.build_sculptor(cast, -4.55, -2.15)
+	sculptor["group"].rotation.y = -0.2
+
+	# Legacy coats, in the fixed spawn order of world.js.
+	var coats := {"rabbit": Color("b996a0"), "bear": Color("bc9d5e"), "cat": Color("92a292")}
+	var spots := [[4.9, -0.25], [4.95, 1.65], [4.98, 3.35]]
+	var index := 0
+	for species in ["rabbit", "bear", "cat"]:
+		var spot: Array = spots[index]
+		var customer := SiteProps.build_animal(cast, species, float(spot[0]), float(spot[1]),
+				coats[species])
+		var node: Node3D = customer["group"]
+		node.rotation.y = -PI * 0.5
+		node.scale = Vector3(0.85, 0.85, 0.85)
+		index += 1
 
 
 func _instantiate(path: String) -> Node3D:
