@@ -230,10 +230,19 @@ powershell -ExecutionPolicy Bypass -File scripts\godot-import.ps1   # 让 Godot 
 | --- | --- | --- | --- | --- |
 | clay | 25 | 1,622 | 3,116 | 87.9% |
 | wheel | 36 | 1,926 | 3,916 | 99.8% |
-| carve | 21 | 1,116 | 2,160 | 99.6% |
-| paint | 26 | 1,066 | 2,006 | 97.7% |
-| serve | 19 | 1,164 | 2,270 | 100% |
-| kiln | 58 | 3,143 | 6,254 | 98.6% |
+| carve | 21 | 1,116 | 2,296 | 99.6% |
+| paint | 26 | 1,066 | 2,516 | 97.7% |
+| serve | 19 | 1,164 | 2,328 | 100% |
+| kiln | 58 | 3,075 | 6,357 | 98.5% |
+
+**与旧版的一致性靠数值比对，不靠肉眼**。`art/tools/legacy_workbench_dump.mjs` 在 Node 里
+跑旧的 `createWorkbenchModel()`，把每个 visible mesh 的「颜色 / 三角数 / 面积加权质心 /
+包围盒尺寸（世界坐标）」导出成 oracle（`.local/tmp/legacy-wb/legacy-workbenches.json`）；
+`art/tools/compare_workbenches.py` 在 Blender 里导入我们的 GLB，按同样口径重算并逐个
+配对。判定：同色质心距离 ≤ 0.02 m、三个轴向的包围盒尺寸相对误差 ≤ 12%。当前
+**18 组（6 台 × 3 级）全部 OK，最差 0.0006 m**。注意两个坑：质心必须按**面积加权**
+（否则 ShapeGeometry 与 n-gon 的三角化方式不同会差 0.03 m），且必须在**世界坐标**里加权
+（非均匀缩放下局部空间加权是另一种量）。
 
 约定：
 - 三个 collection = 三个层级，节点带自定义属性 `tier`（`base` / `upgrade1` / `upgrade2`），
@@ -242,8 +251,11 @@ powershell -ExecutionPolicy Bypass -File scripts\godot-import.ps1   # 让 Godot 
 - 坐标：three.js `(x, y, z)` → Blender `(x, -z, y)`，脚本里用
   `SWIZZLE = Matrix(((1,0,0,0),(0,0,-1,0),(0,1,0,0),(0,0,0,1)))` 统一变换后再建 mesh，
   导出 `export_yup=True`，回到 Godot 就是原来的朝向。
+- **bpy 图元默认沿 +Z 生长，three.js 的 cylinder/sphere 沿 +Y**：`y_axis()` 统一转轴，
+  否则转盘会立起来（这正是第一版 wheel 圆盘出错的根因）。
 - 重跑：`blender -b --python art/export/build-workbenches.py`，产物 = 6 个 `.blend`
-  （`art/blender/workbenches/`）+ 6 个 `.glb` + `manifest.json`。
+  （`art/blender/workbenches/`）+ 6 个 `.glb` + `manifest.json`；
+  校验：`node art/tools/legacy_workbench_dump.mjs` 后跑 `compare_workbenches.py`。
 - 火焰**不在模型里**，Godot 侧用 `GPUParticles3D` 做，窑门上的位置由 manifest 的
   `bounds` 推算。
 

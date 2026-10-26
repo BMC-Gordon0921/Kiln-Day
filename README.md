@@ -12,7 +12,7 @@
 | --- | --- | --- |
 | Godot 工程可启动、无脚本错误 | ✅ | `scripts\check.ps1` · SMOKE OK |
 | 四站 glTF 自动导入（134,658 三角面，7.29 MB） | ✅ | `scripts\godot-import.ps1` · IMPORT OK |
-| 六个工作台 glTF（bpy 重建，1.14 MB，四边面 88–100%） | ✅ | `scripts\godot-import.ps1` |
+| 六个工作台 glTF（bpy 重建，1.10 MB，四边面 88–100%，与旧版几何逐件比对通过） | ✅ | `scripts\godot-import.ps1` |
 | 核心层单元测试（常量/目录/清单/内容包/资产/工作台） | ✅ 99 项 | `scripts\test.ps1` · TESTS OK |
 | Blender → glTF 全自动导出 | ✅ | `scripts\export-art.ps1` |
 | 减面 / 三角转四边（`art/tools/optimize_meshes.py`） | ✅ 减 49.2% | 对照渲染无可见差异 |
