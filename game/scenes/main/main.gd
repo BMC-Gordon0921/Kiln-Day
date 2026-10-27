@@ -154,6 +154,7 @@ func _build_hud() -> void:
 	sheet.finish_step.connect(_on_finish_step)
 	sheet.stoke.connect(_on_stoke)
 	sheet.deliver.connect(_on_deliver)
+	sheet.next_round.connect(_on_next_round)
 
 
 func _resize() -> void:
@@ -300,6 +301,8 @@ func _process(delta: float) -> void:
 			_update_guide()
 		if prompt.visible:
 			prompt.visible = false
+		if _toast_label != null:
+			_toast_label.visible = false
 		return
 	var axis := _read_axis()
 	if axis.length_squared() > 1.0:
@@ -559,6 +562,9 @@ func _on_stoke(started: bool) -> void:
 	kiln.stoking = started
 
 
+var _round_earned := 0
+
+
 func _on_deliver() -> void:
 	if kiln == null or not kiln.finished():
 		return
@@ -581,13 +587,22 @@ func _on_deliver() -> void:
 	Events.item_sold.emit(int(income["earned"]), StringName(String(order["id"])))
 	print("[Site] SERVED %s score=%.1f earned=%d coins=%d" % [
 		order["id"], float(result["score"]), int(income["earned"]), GameState.coins])
+	_round_earned += int(income["earned"])
 	_toast("交付成功 · +%d 铜钱" % int(income["earned"]))
 	_finished_ids[order["id"]] = true
 	order_index += 1
 	if order_index >= orders.size():
 		order_index = 0
 		_finished_ids.clear()
-		_toast("今日打烊 · 三单已交付")
+		var discovered := int(SaveGame.data.get("codex", {}).get("discovered", []).size())
+		sheet.show_round(_round_earned, GameState.coins, discovered)
+		return
+	_start_order()
+
+
+func _on_next_round() -> void:
+	_round_earned = 0
+	_guide_step = -1
 	_start_order()
 
 
@@ -615,6 +630,7 @@ func _toast(text: String) -> void:
 		_toast_label.add_theme_stylebox_override("normal", style)
 		hud_layer.add_child(_toast_label)
 	_toast_label.text = text
+	_toast_label.visible = true
 	_toast_label.modulate.a = 1.0
 	var tween := create_tween()
 	tween.tween_interval(2.4)

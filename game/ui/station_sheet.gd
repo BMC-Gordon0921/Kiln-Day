@@ -9,6 +9,7 @@ signal take_clay
 signal finish_step(id: String)
 signal stoke(started: bool)
 signal deliver
+signal next_round
 
 const TEXT := Color("3a4239")
 const MUTED := Color("858678")
@@ -22,6 +23,7 @@ const CARD_SIZE := Vector2(980, 610)
 
 var _dim: ColorRect
 var _card: PanelContainer
+var _close_button: Button
 var _kicker: Label
 var _title: Label
 var _body: VBoxContainer
@@ -110,6 +112,7 @@ func _build_card() -> void:
 	_title = _label("", 30, TEXT, _font_title)
 	titles.add_child(_title)
 	var close := Button.new()
+	_close_button = close
 	close.text = "✕"
 	close.flat = true
 	close.custom_minimum_size = Vector2(40, 40)
@@ -185,6 +188,8 @@ func present(station: String, order: Dictionary, data: Dictionary) -> void:
 	_station = station
 	_order = order
 	_data = data
+	if _close_button != null:
+		_close_button.visible = true
 	_session = data.get("session")
 	_kiln = data.get("kiln")
 	visible = true
@@ -510,3 +515,34 @@ func _build_serve() -> void:
 		deliver.emit()
 		close_sheet())
 	_body.add_child(deliver_button)
+
+
+## 一日打烊：三单交付后盖在场景上的整屏结算。
+func show_round(earned: int, coins: int, discovered: int) -> void:
+	_station = "round"
+	if _close_button != null:
+		_close_button.visible = false
+	_session = null
+	_kiln = null
+	visible = true
+	_kicker.text = "古窑手艺人 · 一日"
+	_title.text = "今日打烊"
+	_clear_body()
+	var spacer_top := Control.new()
+	spacer_top.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_body.add_child(spacer_top)
+	var total := _label("今天成交 3 单", 16, MUTED)
+	_body.add_child(total)
+	_body.add_child(_label("进账 %d 铜钱" % earned, 46, TEXT, _font_title))
+	_body.add_child(_label("铜钱总数 %d · 图鉴已收录 %d 件" % [coins, discovered],
+		15, MUTED))
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_body.add_child(spacer)
+	var again := _button("再来一天", true)
+	again.custom_minimum_size = Vector2(280, 46)
+	again.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	again.pressed.connect(func():
+		next_round.emit()
+		close_sheet())
+	_body.add_child(again)
