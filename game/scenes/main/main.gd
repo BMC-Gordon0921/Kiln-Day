@@ -36,6 +36,7 @@ var hud_layer: CanvasLayer
 var debug_label: Label
 
 var sheet: StationSheet
+var codex: CodexPanel
 var session: SculptSession
 var kiln: KilnRun
 var orders: Array = []
@@ -134,6 +135,7 @@ func _layout_world() -> void:
 
 func _build_hud() -> void:
 	site_hud = SiteHud.new()
+	site_hud.codex_requested.connect(_open_codex)
 	site_hud.name = "SiteHUD"
 	add_child(site_hud)
 
@@ -202,6 +204,13 @@ func _start() -> void:
 					break
 		elif arg.begins_with("open="):
 			_open_station(arg.substr(5))
+		elif arg == "codex":
+			var items := Catalog.items_for_site(Catalog.load_catalog())
+			if items.size() > 0:
+				GameState.discover(StringName(items[0]["id"]))
+			if items.size() > 1:
+				GameState.discover(StringName(items[1]["id"]))
+			_open_codex()
 		elif arg.begins_with("screen="):
 			_apply_screen(arg.substr(7))
 		elif arg == "take":
@@ -503,6 +512,21 @@ func _can_work(id: String) -> bool:
 	return false
 
 
+func _open_codex() -> void:
+	if sheet != null and sheet.visible:
+		return
+	if codex == null:
+		codex = CodexPanel.new()
+		add_child(codex)
+		codex.closed.connect(func() -> void: site_hud.refresh_codex())
+	var catalog := Catalog.load_catalog()
+	var items := Catalog.items_for_site(catalog)
+	var found: Array = SaveGame.data.get("codex", {}).get("discovered", [])
+	site_hud.refresh_codex()
+	codex.open(items, found)
+	codex.move_to_front()
+
+
 func _open_station(id: String) -> void:
 	if session == null or not _can_work(id):
 		return
@@ -679,6 +703,15 @@ func _toast(text: String) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if codex != null and codex.visible and event.is_action_pressed("ui_cancel"):
+		codex.close_panel()
+		accept_event()
+		return
 	if sheet != null and sheet.visible and event.is_action_pressed("ui_cancel"):
 		sheet.close_sheet()
 		accept_event()
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_C:
+		if sheet == null or not sheet.visible:
+			_open_codex()
+			accept_event()

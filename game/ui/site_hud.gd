@@ -1,6 +1,8 @@
 class_name SiteHud
 extends Control
 
+signal codex_requested
+
 ## The world-screen chrome, ported from the legacy DOM stack (style.css: topbar,
 ## commissions rail, guide card, bottom bar).  Everything is built in code because
 ## the layout mirrors the CSS box model one-to-one; the numbers in the comments are
@@ -40,6 +42,7 @@ var _rail: VBoxContainer
 var _level_label: Label
 var _order_name_label: Label
 var _reference_art: TextureRect
+var _collection_value: Label
 var _guide: PanelContainer
 var _money_label: Label
 var _guide_number: Label
@@ -296,14 +299,41 @@ func _build_rail() -> void:
 	_rail_gap(14)
 	_build_decal_goal()
 
+	var hit := PanelContainer.new()
+	var hit_style := StyleBoxFlat.new()
+	hit_style.bg_color = Color(0, 0, 0, 0)
+	hit_style.set_corner_radius_all(6)
+	hit_style.content_margin_left = 4
+	hit_style.content_margin_right = 4
+	hit_style.content_margin_top = 4
+	hit_style.content_margin_bottom = 4
+	hit.add_theme_stylebox_override("panel", hit_style)
+	hit.mouse_filter = Control.MOUSE_FILTER_STOP
+	hit.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	hit.gui_input.connect(_on_collection_input)
+	_rail.add_child(hit)
 	var collection := HBoxContainer.new()
 	collection.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_rail.add_child(collection)
+	hit.add_child(collection)
 	_label(collection, "我的瓷器藏品", 12, Color("7d8471"), _sans)
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	collection.add_child(spacer)
-	_label(collection, "0 / 4", 12, TEXT, _bold)
+	_collection_value = _label(collection, "%d / 4" % _found_count(), 12, TEXT, _bold)
+
+
+func _found_count() -> int:
+	return int(SaveGame.data.get("codex", {}).get("discovered", []).size())
+
+
+func refresh_codex() -> void:
+	if _collection_value != null:
+		_collection_value.text = "%d / 4" % _found_count()
+
+
+func _on_collection_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		codex_requested.emit()
 
 
 func _build_reference_card() -> void:
