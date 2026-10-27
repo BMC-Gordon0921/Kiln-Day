@@ -12,7 +12,7 @@ $result = Invoke-Godot -GodotArgs @(
 Write-Host ("godot smoke exit={0}  log={1}" -f $result.ExitCode, $result.Log)
 
 $bootOk      = Test-LogMarker -Path $result.Log -Pattern 'BOOT_OK'
-$workshopOk  = Test-LogMarker -Path $result.Log -Pattern 'WORKSHOP_OK'
+$siteOk      = Test-LogMarker -Path $result.Log -Pattern 'SITE_OK'
 $scriptError = Test-LogMarker -Path $result.Log -Pattern 'SCRIPT ERROR'
 
 $labResult = Invoke-Godot -GodotArgs @(
@@ -20,7 +20,7 @@ $labResult = Invoke-Godot -GodotArgs @(
 ) -LogName 'godot-smoke-lab.log'
 $labOk = Test-LogMarker -Path $labResult.Log -Pattern 'ASSETLAB_OK'
 
-if ($bootOk -and $workshopOk -and $labOk -and (-not $scriptError) -and $result.ExitCode -eq 0) {
+if ($bootOk -and $siteOk -and $labOk -and (-not $scriptError) -and $result.ExitCode -eq 0) {
     Get-LogTail -Path $result.Log -Lines 3
     Write-Host 'SMOKE OK'
     exit 0

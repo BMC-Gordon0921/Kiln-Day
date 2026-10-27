@@ -35,6 +35,16 @@ var site_hud: SiteHud
 var hud_layer: CanvasLayer
 var debug_label: Label
 
+var sheet: StationSheet
+var session: SculptSession
+var kiln: KilnRun
+var orders: Array = []
+var order_index := 0
+var steps := {}
+var fired := false
+var grade := ""
+var _finished_ids := {}
+
 var _shot_path := ""
 var _shot_frames := 40
 var _elapsed := 0.0
@@ -137,6 +147,14 @@ func _build_hud() -> void:
 	debug_label.visible = OS.get_cmdline_user_args().has("hud")
 	hud_layer.add_child(debug_label)
 
+	sheet = StationSheet.new()
+	sheet.name = "StationSheet"
+	add_child(sheet)
+	sheet.take_clay.connect(_on_take_clay)
+	sheet.finish_step.connect(_on_finish_step)
+	sheet.stoke.connect(_on_stoke)
+	sheet.deliver.connect(_on_deliver)
+
 
 func _resize() -> void:
 	_layout_world()
@@ -148,6 +166,7 @@ func _resize() -> void:
 
 
 func _start() -> void:
+	_start_order()
 	var args := OS.get_cmdline_user_args()
 	for arg in args:
 		if arg.begins_with("shot="):
@@ -171,6 +190,45 @@ func _start() -> void:
 			# Test hook: jump straight to the "carrying clay" milestone so the
 			# tutorial/next-station copy can be captured without playing.
 			world.player.has_clay = true
+		elif arg.begins_with("stage="):
+			# Test hook: unlock the stations up to <stage>.
+			world.player.has_clay = true
+			steps["clay"] = true
+			var stage := arg.substr(6)
+			for id in ["wheel", "carve", "paint"]:
+				steps[id] = true
+				if id == stage:
+					break
+		elif arg.begins_with("open="):
+			_open_station(arg.substr(5))
+		elif arg == "take":
+			_on_take_clay()
+		elif arg == "sell":
+			world.player.has_clay = true
+			steps["clay"] = true
+			steps["wheel"] = true
+			steps["carve"] = true
+			steps["paint"] = true
+			_start_kiln()
+			kiln.elapsed = kiln.duration
+			kiln.seconds["perfect"] = 2.0
+			kiln.seconds["good"] = 1.0
+			fired = true
+			grade = kiln.grade()
+			_on_deliver()
+		elif arg == "fire":
+			# Test hook: finish the kiln with a good fire.
+			world.player.has_clay = true
+			steps["clay"] = true
+			steps["wheel"] = true
+			steps["carve"] = true
+			steps["paint"] = true
+			_start_kiln()
+			kiln.elapsed = kiln.duration
+			kiln.seconds["perfect"] = 2.0
+			kiln.seconds["good"] = 1.0
+			fired = true
+			grade = kiln.grade()
 	_resize()
 	if world.site_root == null:
 		print("[Site] SITE_FAIL 站点模型未加载")
@@ -232,6 +290,17 @@ func _process(delta: float) -> void:
 	if world == null or world.player == null or world.camera == null:
 		return
 	_elapsed += delta
+	if sheet != null and sheet.visible:
+		sheet.tick(delta)
+		if kiln != null and kiln.finished() and not fired:
+			fired = true
+			grade = kiln.grade()
+			Events.kiln_opened.emit({"grade": grade, "seconds": kiln.seconds})
+			_guide_step = -1
+			_update_guide()
+		if prompt.visible:
+			prompt.visible = false
+		return
 	var axis := _read_axis()
 	if axis.length_squared() > 1.0:
 		axis = axis.normalized()
@@ -300,34 +369,54 @@ func _update_prompt() -> void:
 	prompt.place_at(screen, world_view.size.x)
 
 	var pressed := Input.is_physical_key_pressed(KEY_F)
-	if pressed and not _f_held:
+	if pressed and not _f_held and (sheet == null or not sheet.visible):
 		print("[Site] INTERACT %s" % nearest["id"])
+		_open_station(String(nearest["id"]))
 	_f_held = pressed
 
 
 ## Placeholder until the campaign state lands (Step 5): everything is unlocked.
 func _prompt_state() -> Dictionary:
-	return {"fired": false, "kiln": false, "kiln_result": false, "can_work": true}
+	var finished := kiln != null and kiln.finished()
+	return {
+		"fired": fired,
+		"kiln": kiln != null,
+		"kiln_result": finished,
+		"can_work": true,
+	}
 
 
-## The guide card branches on the same milestone as the legacy tour: carry clay,
-## then head for the wheel.
+## The guide card walks the same seven beats as the legacy tour.
 var _guide_step := -1
+var _toast_label: Label
+
+const GUIDE := [
+	{"num": "01", "kicker": "开始你的第一件作品", "title": "从一抔瓷泥开始",
+		"copy": "去取泥台领取瓷泥。"},
+	{"num": "02", "kicker": "新手教学 · 2 / 7", "title": "把瓷泥送上拉坯台",
+		"copy": "走近「粗塑成形」台，按 F 开始揉泥、拉坯。"},
+	{"num": "03", "kicker": "新手教学 · 3 / 7", "title": "修出干净的器形",
+		"copy": "去「细节雕刻」台，用刮刀修掉多余泥料。"},
+	{"num": "04", "kicker": "新手教学 · 4 / 7", "title": "给罐子画上青花",
+		"copy": "去「手绘上色」台，画上中间那条宽蓝带。"},
+	{"num": "05", "kicker": "新手教学 · 5 / 7", "title": "入窑烧制",
+		"copy": "去「瓷器窑炉」按 F，按住鼓风把热度压在带里。"},
+	{"num": "06", "kicker": "新手教学 · 6 / 7", "title": "交付这一单",
+		"copy": "去「评分与交付」按 F，看看这窑的成色。"},
+]
+
 
 func _update_guide() -> void:
 	if site_hud == null or world.player == null:
 		return
-	var step := 1 if world.player.has_clay else 0
+	var step := _step()
 	if step == _guide_step:
 		return
 	_guide_step = step
 	labels.set_active(_next_index())
-	if step == 1:
-		site_hud.set_guide("02", "新手教学 · 2 / 7", "把瓷泥送上拉坯台",
-			"走近「粗塑成形」台，按 F 开始揉泥、拉坯。")
-	else:
-		site_hud.set_guide("01", "开始你的第一件作品", "从一抔瓷泥开始",
-			"去取泥台领取瓷泥。")
+	var entry: Dictionary = GUIDE[mini(step, GUIDE.size() - 1)]
+	site_hud.set_guide(String(entry["num"]), String(entry["kicker"]),
+		String(entry["title"]), String(entry["copy"]))
 
 
 ## Legacy nextStation(): first bench in STATIONS order that still needs work.
@@ -336,5 +425,203 @@ func _next_station() -> Dictionary:
 
 
 func _next_index() -> int:
-	# Only two milestones exist on this prototype: fetch clay, then throw it.
-	return 1 if world.player != null and world.player.has_clay else 0
+	return mini(_step(), 5)
+
+
+func _step() -> int:
+	if world.player == null or not world.player.has_clay:
+		return 0
+	if not steps.has("wheel"):
+		return 1
+	if not steps.has("carve"):
+		return 2
+	if not steps.has("paint"):
+		return 3
+	if not fired:
+		return 4
+	return 5
+
+
+# --- 订单流程 -------------------------------------------------------------
+
+
+func _start_order() -> void:
+	orders = _load_orders()
+	session = SculptSession.new(StringName(String(orders[order_index]["id"])), 1)
+	session.radius = 18.0
+	world.player.has_clay = false
+	world.player.set_carried(null)
+	steps.clear()
+	fired = false
+	grade = ""
+	kiln = null
+	_guide_step = -1
+	_update_guide()
+	if site_hud != null:
+		_update_order_rail()
+
+
+func _load_orders() -> Array:
+	var items: Array = Catalog.items_for_site(Catalog.load_catalog())
+	if items.is_empty():
+		return [{"id": "band-pot", "name": "一抹青花罐",
+			"task": "做一个圆润的罐子，中间画一条宽蓝带。", "hint": ""}]
+	var result: Array = []
+	for item in items:
+		result.append({
+			"id": String(item.get("id", "band-pot")),
+			"name": String(item.get("name", "瓷器")),
+			"task": String(item.get("task", "")),
+			"hint": String(item.get("hint", "")),
+		})
+	return result.slice(0, mini(3, result.size()))
+
+
+func _update_order_rail() -> void:
+	if orders.is_empty():
+		return
+	var order: Dictionary = orders[order_index]
+	GameState.order_index = order_index
+	site_hud.set_order(String(order.get("name", "")), order_index + 1, orders.size())
+
+
+func _can_work(id: String) -> bool:
+	match id:
+		"clay":
+			return true
+		"wheel", "carve", "paint":
+			return world.player.has_clay
+		"kiln":
+			return steps.has("paint")
+		"serve":
+			return fired
+	return false
+
+
+func _open_station(id: String) -> void:
+	if session == null or not _can_work(id):
+		return
+	if id == "kiln" and kiln == null:
+		_start_kiln()
+	sheet.present(id, orders[order_index], {
+		"level": order_index + 1,
+		"has_clay": world.player.has_clay,
+		"fired": fired,
+		"grade": grade,
+		"session": session,
+		"kiln": kiln,
+		"result": session.score(),
+		"elapsed": session.elapsed_ms,
+		"income": _income_preview(session.score()),
+	})
+
+
+func _income_preview(result: Dictionary) -> Dictionary:
+	var passed := bool(result.get("passed", false))
+	var order: Dictionary = orders[order_index]
+	return Workshop.order_income(60.0, {
+		"kiln": 1,
+		"serve": 1,
+		"passed": passed,
+		"elapsedMs": session.elapsed_ms,
+		"eligible": true,
+		"firstPass": passed and not _finished_ids.has(order["id"]),
+	})
+
+
+func _start_kiln() -> void:
+	kiln = KilnRun.new(Time.get_ticks_usec() & 0xFFFF, 1)
+	fired = false
+	grade = ""
+
+
+func _on_take_clay() -> void:
+	var lump := Node3D.new()
+	lump.name = "ClayLump"
+	SiteProps.ball(lump, 0.0, 0.0, 0.0, 0.22, 0.18, 0.22, Color("f3e8d2"))
+	world.player.set_carried(lump)
+	steps["clay"] = true
+	_guide_step = -1
+	_update_guide()
+	_toast("瓷泥到手 · 去「粗塑成形」台")
+
+
+func _on_finish_step(id: String) -> void:
+	steps[id] = true
+	_guide_step = -1
+	_update_guide()
+	_toast("「%s」完成" % String(SiteLayout.station(id).get("name", id)))
+
+
+func _on_stoke(started: bool) -> void:
+	if kiln == null or kiln.finished():
+		return
+	kiln.stoking = started
+
+
+func _on_deliver() -> void:
+	if kiln == null or not kiln.finished():
+		return
+	var result := session.score()
+	var passed := bool(result["passed"])
+	var order: Dictionary = orders[order_index]
+	var first_pass := passed and not _finished_ids.has(order["id"])
+	var income := Workshop.order_income(60.0, {
+		"kiln": 1,
+		"serve": 1,
+		"passed": passed,
+		"elapsedMs": session.elapsed_ms,
+		"eligible": true,
+		"firstPass": first_pass,
+	})
+	GameState.add_coins(int(income["earned"]))
+	GameState.discover(StringName(String(order["id"])))
+	SaveGame.save_game()
+	Events.sculpture_finished.emit(result)
+	Events.item_sold.emit(int(income["earned"]), StringName(String(order["id"])))
+	print("[Site] SERVED %s score=%.1f earned=%d coins=%d" % [
+		order["id"], float(result["score"]), int(income["earned"]), GameState.coins])
+	_toast("交付成功 · +%d 铜钱" % int(income["earned"]))
+	_finished_ids[order["id"]] = true
+	order_index += 1
+	if order_index >= orders.size():
+		order_index = 0
+		_finished_ids.clear()
+		_toast("今日打烊 · 三单已交付")
+	_start_order()
+
+
+func _toast(text: String) -> void:
+	if hud_layer == null:
+		return
+	if _toast_label == null:
+		_toast_label = Label.new()
+		_toast_label.name = "Toast"
+		_toast_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+		_toast_label.offset_top = -140
+		_toast_label.offset_bottom = -104
+		_toast_label.offset_left = -260
+		_toast_label.offset_right = 260
+		_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_toast_label.add_theme_font_size_override("font_size", 16)
+		_toast_label.add_theme_color_override("font_color", Color("fdfaf1"))
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.216, 0.275, 0.235, 0.94)
+		style.set_corner_radius_all(10)
+		style.content_margin_left = 18
+		style.content_margin_right = 18
+		style.content_margin_top = 8
+		style.content_margin_bottom = 8
+		_toast_label.add_theme_stylebox_override("normal", style)
+		hud_layer.add_child(_toast_label)
+	_toast_label.text = text
+	_toast_label.modulate.a = 1.0
+	var tween := create_tween()
+	tween.tween_interval(2.4)
+	tween.tween_property(_toast_label, "modulate:a", 0.0, 0.5)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if sheet != null and sheet.visible and event.is_action_pressed("ui_cancel"):
+		sheet.close_sheet()
+		accept_event()

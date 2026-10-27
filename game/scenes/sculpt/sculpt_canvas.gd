@@ -19,6 +19,10 @@ var _ghost: Image
 var _ghost_texture: ImageTexture
 var _drawing := false
 
+## Theme hooks so the canvas can sit on paper instead of the dark workshop panel.
+var background := Color(0.08, 0.08, 0.09, 1.0)
+var empty_color := Color(0.13, 0.12, 0.12, 1.0)
+
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(DISPLAY_SIZE, DISPLAY_SIZE)
@@ -49,7 +53,7 @@ func refresh() -> void:
 		var color := Sculpture.palette_color(value)
 		# 空白格画成深色泥底，让"还没刻"的区域看得见。
 		if value == 0:
-			color = Color(0.13, 0.12, 0.12, 1.0)
+			color = empty_color
 		_image.set_pixel(i % Sculpture.SIZE, i / Sculpture.SIZE, color)
 	_texture.update(_image)
 	queue_redraw()
@@ -57,7 +61,7 @@ func refresh() -> void:
 
 func _draw() -> void:
 	var rect := Rect2(Vector2.ZERO, size)
-	draw_rect(rect, Color(0.08, 0.08, 0.09, 1.0))
+	draw_rect(rect, background)
 	if _texture != null:
 		draw_texture_rect(_texture, rect, false)
 	if _ghost_texture != null:

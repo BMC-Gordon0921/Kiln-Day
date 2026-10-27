@@ -37,6 +37,9 @@ var _cjk: SystemFont
 var _topbar: Panel
 var _day_pill: HBoxContainer
 var _rail: VBoxContainer
+var _level_label: Label
+var _order_name_label: Label
+var _reference_art: TextureRect
 var _guide: PanelContainer
 var _money_label: Label
 var _guide_number: Label
@@ -322,7 +325,7 @@ func _build_reference_card() -> void:
 	var head := HBoxContainer.new()
 	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(head)
-	_label(head, "第 %d 关 / 3" % (GameState.order_index + 1), 11, SOFT, _bold)
+	_level_label = _label(head, "第 %d 关 / 3" % (GameState.order_index + 1), 11, SOFT, _bold)
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(spacer)
@@ -334,10 +337,11 @@ func _build_reference_card() -> void:
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_reference_art = art
 	box.add_child(art)
 
 	var name: String = _order.get("name", "一抹青花罐")
-	_label(box, name, 13, TEXT, _bold)
+	_order_name_label = _label(box, name, 13, TEXT, _bold)
 	_label(box, "60% 起奖励 · 首次通关 +60 币", 11, SOFT, _sans)
 	var note := PanelContainer.new()
 	note.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -705,3 +709,12 @@ func _spacer(parent: Control, width: float) -> void:
 	spacer.custom_minimum_size.x = width
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(spacer)
+
+
+func set_order(name: String, index: int, total: int) -> void:
+	if _order_name_label != null:
+		_order_name_label.text = name
+	if _level_label != null:
+		_level_label.text = "第 %d 关 / %d" % [index, total]
+	if _reference_art != null:
+		_reference_art.texture = load(PRESET_PATH % clampi(index - 1, 0, 2))
