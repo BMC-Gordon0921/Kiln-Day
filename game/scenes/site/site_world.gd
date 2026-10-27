@@ -10,17 +10,17 @@ const SITE_LIFT := 0.09
 const SITE_PATH := "res://assets/models/maps/%s.glb"
 const BENCH_PATH := "res://assets/models/workbenches/%s.glb"
 
-const HEMI_SKY := Color("fff6dc")
+const HEMI_SKY := Color("fbf4e2")
 const HEMI_GROUND := Color("a7aa90")
 const KEY_COLOR := Color("ffe3b3")
-const FILL_COLOR := Color("d3e6df")
+const FILL_COLOR := Color("cfe4f2")
 const KEY_POSITION := Vector3(-3.0, 14.0, 7.0)
 
 ## Calibrated against the legacy capture (see art/tools/parity_score.py). three.js
 ## intensities do not transfer 1:1, so these are measured, not copied.
-const AMBIENT_ENERGY := 0.26
-const KEY_ENERGY := 0.84
-const FILL_ENERGY := 0.20
+const AMBIENT_ENERGY := 0.22
+const KEY_ENERGY := 0.44
+const FILL_ENERGY := 0.95
 const FILL_POSITION := Vector3(8.0, 7.0, -5.0)
 
 var camera: OrbitCamera
@@ -28,6 +28,24 @@ var content: Node3D
 var site_root: Node3D
 var bench_roots: Dictionary = {}
 var environment: Environment
+var smoke: ParticleField
+
+## Per-material albedo calibration measured against the legacy capture.  The
+## site GLB keeps its authored colours; these factors only steer the renderer
+## towards the warmer/darker three.js palette.
+const PALETTE := {
+	"tile": Color(0.90, 0.89, 0.98),
+	"stone_light": Color(0.90, 0.89, 0.97),
+	"stone": Color(0.93, 0.92, 0.97),
+	"ivory": Color(0.90, 0.89, 0.95),
+	"sand": Color(0.90, 0.88, 0.96),
+	"roof": Color(1.0, 1.02, 1.04),
+	"leaf": Color(0.96, 0.96, 1.02),
+	"sage": Color(0.95, 0.97, 1.02),
+}
+var player: PlayerActor
+var hint: SiteHint
+var cast: Node3D
 
 var _key_light: DirectionalLight3D
 var _fill_light: DirectionalLight3D
@@ -49,8 +67,12 @@ func build() -> void:
 	_build_environment()
 	_build_lights()
 	_build_site()
+	_calibrate_materials()
 	_build_benches()
 	_build_cast()
+	_build_smoke()
+	_build_player()
+	_build_hint()
 	_build_camera()
 	if camera:
 		camera.apply()
@@ -65,7 +87,7 @@ func _build_environment() -> void:
 	environment.ambient_light_color = HEMI_SKY
 	environment.ambient_light_energy = AMBIENT_ENERGY
 	environment.tonemap_mode = Environment.TONE_MAPPER_ACES
-	environment.tonemap_exposure = 1.02
+	environment.tonemap_exposure = 0.90
 	world.environment = environment
 	add_child(world)
 
@@ -102,6 +124,35 @@ func _build_site() -> void:
 	content.add_child(site_root)
 
 
+func _calibrate_materials() -> void:
+	var stack: Array[Node] = [content]
+	var overrides := {}
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		if node is MeshInstance3D and node.mesh != null:
+			var mi := node as MeshInstance3D
+			for surface in mi.mesh.get_surface_count():
+				var material := mi.get_active_material(surface)
+				if not material is BaseMaterial3D:
+					continue
+				var factor := Color.WHITE
+				var lower := material.resource_name.to_lower()
+				for key in PALETTE:
+					if lower.begins_with(key):
+						factor = PALETTE[key]
+						break
+				if factor == Color.WHITE:
+					continue
+				var id := material.get_instance_id()
+				if not overrides.has(id):
+					var copy := material.duplicate() as BaseMaterial3D
+					copy.albedo_color = copy.albedo_color * factor
+					overrides[id] = copy
+				mi.set_surface_override_material(surface, overrides[id])
+		for child in node.get_children():
+			stack.append(child)
+
+
 func _build_benches() -> void:
 	for entry in SiteLayout.STATIONS:
 		var id: String = entry["id"]
@@ -126,12 +177,9 @@ func _build_cast() -> void:
 		accent = Color(str(site["color"]))
 	SiteProps.build_sign(content, "古窑手作坊", accent)
 
-	var cast := Node3D.new()
+	cast = Node3D.new()
 	cast.name = "Cast"
 	content.add_child(cast)
-
-	var sculptor := SiteProps.build_sculptor(cast, -4.55, -2.15)
-	sculptor["group"].rotation.y = -0.2
 
 	# Legacy coats, in the fixed spawn order of world.js.
 	var coats := {"rabbit": Color("b996a0"), "bear": Color("bc9d5e"), "cat": Color("92a292")}
@@ -145,6 +193,47 @@ func _build_cast() -> void:
 		node.rotation.y = -PI * 0.5
 		node.scale = Vector3(0.85, 0.85, 0.85)
 		index += 1
+
+
+## The player is part of the diorama (not the HUD) so the camera can orbit it and
+## the depth buffer handles occlusion, exactly like the legacy `player.group`.
+## The legacy build hangs a normal-blended plume off the kiln chimney anchor
+## baked into each site (guyao: 6.0, 5.68, -9.3).
+func _build_smoke() -> void:
+	smoke = ParticleField.create(content, {
+		"count": 160,
+		"color": Color("d6d0c3"),
+		"color2": Color("f8f3e8"),
+		"size": 30.0,
+		"rise": 4.6,
+		"spread": 0.7,
+		"opacity": 0.30,
+		"additive": false,
+		"radius": 0.13,
+		"height": 0.08,
+		"fade_in": 0.035,
+		"seed": 3,
+	}, "ChimneySmoke")
+	smoke.position = Vector3(6.0, 5.68, -9.3)
+
+
+func _process(delta: float) -> void:
+	if smoke:
+		smoke.update_world(delta, 0.78)
+
+
+func _build_player() -> void:
+	player = PlayerActor.new()
+	player.name = "Player"
+	content.add_child(player)
+	player.build()
+
+
+func _build_hint() -> void:
+	hint = SiteHint.new()
+	hint.name = "Guidance"
+	content.add_child(hint)
+	hint.build()
 
 
 func _instantiate(path: String) -> Node3D:

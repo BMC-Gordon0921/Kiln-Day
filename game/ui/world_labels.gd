@@ -7,13 +7,13 @@ extends Control
 ## version, so they keep a constant pixel size while the world orbits underneath.
 
 const CHIP_BG := Color("fff9ea")
-const CHIP_BG_ACTIVE := Color("3d563f")
+const CHIP_BG_ACTIVE := Color("fdf6e4")
 const CHIP_TEXT := Color("585748")
-const CHIP_TEXT_ACTIVE := Color("fffce8")
+const CHIP_TEXT_ACTIVE := Color("44483c")
 const NUM_BG := Color("e9e6d8")
-const NUM_BG_ACTIVE := Color("f0c272")
+const NUM_BG_ACTIVE := Color("f0bd6c")
 const NUM_TEXT := Color("797969")
-const NUM_TEXT_ACTIVE := Color("354b38")
+const NUM_TEXT_ACTIVE := Color("3c3a2c")
 const MUTED := Color("8c8d7b")
 const NEAR_OUTLINE := Color("e1ab65")
 const FONT_NAMES := [
@@ -25,6 +25,9 @@ var active_index := -1
 var _world: SiteWorld
 var _chips: Array[Dictionary] = []
 var _font: SystemFont
+var _next_tag: PanelContainer
+var _next_label: Label
+var _next_arrow: Control
 
 
 func setup(world: SiteWorld) -> void:
@@ -81,6 +84,59 @@ func _build() -> void:
 			"anchor": Vector3(entry["x"], float(entry["label_y"]) + SiteWorld.SITE_LIFT, entry["z"]),
 		})
 
+	_build_next_tag()
+
+
+## Legacy main.js draws a cream callout plus a chunky orange arrow above the
+## station the player should visit next (`#next-hint`).  Rebuild it as 2D
+## controls that follow the active plaque every frame.
+func _build_next_tag() -> void:
+	_next_tag = PanelContainer.new()
+	_next_tag.name = "NextStation"
+	_next_tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(1.0, 0.976, 0.914, 0.94)
+	style.set_corner_radius_all(7)
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 5
+	style.content_margin_bottom = 5
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	style.border_color = Color("e2b478")
+	style.shadow_color = Color(0.55, 0.36, 0.16, 0.14)
+	style.shadow_size = 6
+	style.shadow_offset = Vector2(0, 2)
+	_next_tag.add_theme_stylebox_override("panel", style)
+	add_child(_next_tag)
+	_next_label = Label.new()
+	_next_label.add_theme_font_override("font", _font)
+	_next_label.add_theme_font_size_override("font_size", 11)
+	_next_label.add_theme_color_override("font_color", Color("9c6534"))
+	_next_tag.add_child(_next_label)
+
+	_next_arrow = Control.new()
+	_next_arrow.name = "NextArrow"
+	_next_arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_next_arrow.custom_minimum_size = Vector2(34, 40)
+	_next_arrow.draw.connect(_draw_arrow)
+	add_child(_next_arrow)
+
+
+func _draw_arrow() -> void:
+	var color := Color("f0a24e")
+	var w := _next_arrow.size.x
+	var shaft := Rect2(w * 0.5 - 5.0, 0.0, 10.0, 26.0)
+	_next_arrow.draw_rect(shaft, color)
+	var tip := PackedVector2Array([
+		Vector2(w * 0.5 - 15.0, 23.0),
+		Vector2(w * 0.5 + 15.0, 23.0),
+		Vector2(w * 0.5, 40.0),
+	])
+	_next_arrow.draw_colored_polygon(tip, color)
+
 
 func set_active(index: int) -> void:
 	if index == active_index:
@@ -95,9 +151,16 @@ func set_active(index: int) -> void:
 		var title: Label = _chips[i]["title"]
 		title.add_theme_color_override("font_color", CHIP_TEXT_ACTIVE if active else CHIP_TEXT)
 		var level: Label = _chips[i]["level"]
-		level.add_theme_color_override("font_color",
-				Color("c8d2bc") if active else MUTED)
+		level.add_theme_color_override("font_color", MUTED)
 	active_index = index
+	if index >= 0 and index < _chips.size():
+		var entry: Dictionary = SiteLayout.STATIONS[index]
+		_next_label.text = "下一站 · %s" % str(entry["name"])
+		_next_tag.visible = true
+		_next_arrow.visible = true
+	else:
+		_next_tag.visible = false
+		_next_arrow.visible = false
 
 
 func _process(_delta: float) -> void:
@@ -116,6 +179,18 @@ func _process(_delta: float) -> void:
 		chip.size = size
 		# The DOM version translates the plaque so its bottom edge sits on the anchor.
 		chip.position = (screen - Vector2(size.x * 0.5, size.y)).round()
+	if active_index >= 0 and active_index < _chips.size():
+		var active_chip: PanelContainer = _chips[active_index]["node"]
+		var tag_size := _next_tag.get_combined_minimum_size()
+		_next_tag.size = tag_size
+		var center_x := active_chip.position.x + active_chip.size.x * 0.5
+		_next_tag.position = Vector2(
+			round(center_x - tag_size.x * 0.5),
+			round(active_chip.position.y - tag_size.y - 8.0))
+		_next_arrow.position = Vector2(
+			round(center_x - _next_arrow.size.x * 0.5),
+			round(_next_tag.position.y - 36.0))
+		_next_arrow.queue_redraw()
 
 
 func _chip_style(active: bool) -> StyleBoxFlat:

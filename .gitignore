@@ -18,4 +18,5 @@ Desktop.ini
 .DS_Store
 *.tmp
 *.log
+__pycache__/
 *.blend1
