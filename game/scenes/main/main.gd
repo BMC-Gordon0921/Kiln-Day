@@ -53,6 +53,9 @@ var _f_held := false
 var _scripted_axis := Vector2.ZERO
 var _walk_target := Vector2.INF
 var _pending_shot := false
+var _autoplay_path := ""
+var _autoplay_dir := ""
+var _autoplay_active := false
 var _bare := false
 var _moved := false
 
@@ -174,6 +177,10 @@ func _start() -> void:
 	for arg in args:
 		if arg.begins_with("shot="):
 			_shot_path = arg.substr(5)
+		elif arg.begins_with("autoplay="):
+			_autoplay_path = arg.substr(9)
+		elif arg.begins_with("autoplay-dir="):
+			_autoplay_dir = arg.substr(13)
 		elif arg.begins_with("level="):
 			world.set_bench_level(int(arg.substr(6)))
 		elif arg.begins_with("shade="):
@@ -277,9 +284,137 @@ func _start() -> void:
 	print("[Site] SITE_OK %s bounds=(%.2f, %.2f, %.2f)-(%.2f, %.2f, %.2f)" % [
 		world.SITE_ID, box.position.x, box.position.y, box.position.z,
 		box.end.x, box.end.y, box.end.z])
+	if not _autoplay_path.is_empty():
+		await _run_autoplay()
+		return
 	if _shot_path.is_empty():
 		return
 	await _capture()
+
+
+## Replay `art/data/legacy-flow.json` step by step and write one PNG per state.
+## This is the P2 capture harness: `-- autoplay=<json> [autoplay-dir=<dir>]`.
+func _run_autoplay() -> void:
+	var file := FileAccess.open(_autoplay_path, FileAccess.READ)
+	if file == null:
+		push_error("autoplay: cannot open %s" % _autoplay_path)
+		get_tree().quit(1)
+		return
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	if not parsed is Dictionary or not parsed.has("flow"):
+		push_error("autoplay: missing flow object")
+		get_tree().quit(1)
+		return
+	var flow: Dictionary = parsed["flow"]
+	var out_dir := _autoplay_dir
+	if out_dir.is_empty():
+		out_dir = _autoplay_path.get_base_dir().path_join("godot-flow")
+	DirAccess.make_dir_recursive_absolute(out_dir)
+	var ids := flow.keys()
+	ids.sort()
+	_autoplay_active = true
+	for id in ids:
+		var state: Dictionary = flow[id]
+		_apply_flow_state(String(id), state)
+		for i in 10:
+			await get_tree().process_frame
+		var image := get_viewport().get_texture().get_image()
+		var path := out_dir.path_join("%s.png" % id)
+		var error := image.save_png(path)
+		print("[Site] AUTOPLAY %s err=%d" % [id, error])
+	_autoplay_active = false
+	get_tree().quit()
+
+
+func _apply_flow_state(id: String, state: Dictionary) -> void:
+	if sheet != null and sheet.visible:
+		sheet.close_sheet()
+	if codex != null and codex.visible:
+		codex.visible = false
+	var has_clay := bool(state.get("hasClay", false))
+	if has_clay:
+		var lump := Node3D.new()
+		lump.name = "ClayLump"
+		SiteProps.ball(lump, 0.0, 0.0, 0.0, 0.22, 0.18, 0.22, Color("f3e8d2"))
+		world.player.set_carried(lump)
+	else:
+		world.player.set_carried(null)
+	world.player.has_clay = has_clay
+	steps.erase("clay")
+	steps.erase("wheel")
+	steps.erase("carve")
+	steps.erase("paint")
+	var has_shape := bool(state.get("hasShape", false))
+	var has_paint := bool(state.get("hasPaint", false))
+	if has_clay or has_shape:
+		steps["clay"] = true
+	if has_shape:
+		steps["wheel"] = true
+	if has_shape and has_paint:
+		steps["carve"] = true
+	if has_paint:
+		steps["paint"] = true
+	fired = bool(state.get("fired", false))
+	if fired and not steps.has("paint"):
+		steps["clay"] = true
+		steps["wheel"] = true
+		steps["carve"] = true
+		steps["paint"] = true
+	grade = "good" if fired else ""
+	_guide_step = -1
+	_update_guide()
+	var station := _station_for_near(String(state.get("near", "")))
+	if not station.is_empty():
+		var entry := SiteLayout.station(station)
+		if not entry.is_empty():
+			world.player.teleport(entry["approach"].x, entry["approach"].y)
+	var open := ""
+	match id:
+		"03-supply", "04-brief":
+			open = "clay"
+		"06-wheel", "06-wheel-stroked":
+			open = "wheel"
+		"07-carve", "07-carve-stroked":
+			open = "carve"
+		"08-paint", "08-paint-stroked":
+			open = "paint"
+		"09-kiln":
+			open = "kiln"
+		"11-review":
+			open = "serve"
+	if not open.is_empty():
+		_open_station(open)
+
+
+func _station_for_near(near: String) -> String:
+	match near:
+		"取泥台", "领取与订单", "领取与订单台":
+			return "clay"
+		"取泥台 · 领取订单", "取泥与订单":
+			return "clay"
+		"拉坯台", "拉坯机", "拉坯与塑形":
+			return "wheel"
+		"刻花台", "细节雕刻":
+			return "carve"
+		"彩绘台", "手绘上色":
+			return "paint"
+		"窑炉", "瓷器窑炉":
+			return "kiln"
+		"提交台", "提交作品", "评分与交付":
+			return "serve"
+	if near.contains("泥"):
+		return "clay"
+	if near.contains("坯") or near.contains("塑"):
+		return "wheel"
+	if near.contains("刻"):
+		return "carve"
+	if near.contains("绘") or near.contains("彩"):
+		return "paint"
+	if near.contains("窑"):
+		return "kiln"
+	if near.contains("提交") or near.contains("交付"):
+		return "serve"
+	return ""
 
 
 func _capture() -> void:
