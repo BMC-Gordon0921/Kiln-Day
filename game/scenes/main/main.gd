@@ -202,6 +202,8 @@ func _start() -> void:
 					break
 		elif arg.begins_with("open="):
 			_open_station(arg.substr(5))
+		elif arg.begins_with("screen="):
+			_apply_screen(arg.substr(7))
 		elif arg == "take":
 			_on_take_clay()
 		elif arg == "sell":
@@ -530,6 +532,45 @@ func _income_preview(result: Dictionary) -> Dictionary:
 		"eligible": true,
 		"firstPass": passed and not _finished_ids.has(order["id"]),
 	})
+
+
+## Legacy capture entry points: `-- screen=<world|supply|brief|editor|kiln|review|result>`.
+func _apply_screen(screen: String) -> void:
+	match screen:
+		"world":
+			pass
+		"supply", "brief":
+			_open_station("clay")
+		"editor":
+			world.player.has_clay = true
+			_open_station("wheel")
+		"carve":
+			world.player.has_clay = true
+			steps["wheel"] = true
+			_open_station("carve")
+		"paint":
+			world.player.has_clay = true
+			steps["wheel"] = true
+			steps["carve"] = true
+			_open_station("paint")
+		"kiln":
+			world.player.has_clay = true
+			steps["wheel"] = true
+			steps["carve"] = true
+			steps["paint"] = true
+			_open_station("kiln")
+		"review", "result":
+			world.player.has_clay = true
+			steps["wheel"] = true
+			steps["carve"] = true
+			steps["paint"] = true
+			_start_kiln()
+			kiln.elapsed = kiln.duration
+			kiln.seconds["perfect"] = 2.0
+			kiln.seconds["good"] = 1.0
+			fired = true
+			grade = kiln.grade()
+			_open_station("serve")
 
 
 func _start_kiln() -> void:
