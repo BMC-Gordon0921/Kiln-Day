@@ -6,6 +6,9 @@ export/
 *.exe
 *.dll
 
+# --- acceptance builds (see scripts/build.ps1) ---
+dist/
+
 # --- local runtime redirect (APPDATA / TEMP live here, see scripts/_env.ps1) ---
 .local/
 

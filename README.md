@@ -27,7 +27,8 @@
 | **P2 世界层：legacy 同款 HUD + 站点标签 + 下一站提示 + 烟雾** | ✅ 可看 | `docs/images/p2-world.png`、`scripts/shot.ps1` |
 | 图鉴最小版（4 格、点击看档案、交付自动收录） | ✅ 可用 | `docs/images/p2-codex.png`、按 `C` |
 | 成就 UI / 剧情 / 其余三站 | ⬜ 未开始 | — |
-| 导出 exe / web | ⛔ 阻塞 | 未装导出模板，见 `docs/00` |
+| 导出 exe | ✅ 单文件 | `scripts/build.ps1 -Tag step0` · `dist/windows/KilnDay-step0.exe` |
+| 导出 web | ⛔ 待做 | Step 6 |
 
 ## 怎么开始
 
@@ -47,6 +48,29 @@ powershell -ExecutionPolicy Bypass -File scripts\run.ps1
 ```
 
 改了 `.glb` / `.csv` / 图片之后，先跑 `scripts\godot-import.ps1` 再跑测试。
+
+## 构建可验收的 exe
+
+导出模板只需装一次（约 1.28 GB，装到 `.local/appdata/Godot/export_templates/4.7.2.stable/`）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\install-templates.ps1
+# 已有下载好的 tpz 时：-From D:\path\Godot_v4.7.2-stable_export_templates.tpz
+```
+
+之后每一步都能产出一个自包含 exe（pck 已内嵌，双击即可运行）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Tag step0
+# dist\windows\KilnDay-step0.exe（约 118 MB）
+
+# 构建后自动用 exe 跑一次无头冒烟（BOOT_OK + SITE_OK）
+# 想额外截一张图：-Shot
+powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Tag step0 -Shot
+
+# Web 产物（Step 6）
+powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Target web -Tag web
+```
 
 ## 怎么玩（当前切片）
 
@@ -80,7 +104,8 @@ art/
   export/              export-blender-scenes.py、build-workbenches.py
   tools/               optimize_meshes.py、render_previews.py、mesh_stats.py、blend_stats.py
 legacy/                旧 three.js 版本只读副本（git 忽略，见 docs/00）
-scripts/               verify / import / test / smoke / run / export-art / check
+scripts/               verify / import / test / smoke / run / export-art / check / build / install-templates
+dist/                  验收产物（git 忽略）：windows/KilnDay-*.exe、web/
 docs/                  00 环境 · 01 架构与资产管线 · 02 模块路线图 · 03 潜力评估 · 04 规范 · 05 计划归档
 .local/                Godot 的 user:// 重定向与临时文件（git 忽略，可随时删）
 ```

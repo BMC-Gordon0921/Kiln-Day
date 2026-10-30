@@ -55,7 +55,9 @@ static func _validate_entry(id: String, entry: Dictionary) -> Array[String]:
 	var url := String(entry.get("url", ""))
 	if url.is_empty():
 		errs.append("%s: 缺少 url" % id)
-	elif not FileAccess.file_exists(ASSET_ROOT + url):
+	elif not ResourceLoader.exists(ASSET_ROOT + url):
+		# Exported builds remap .glb to .scn, so FileAccess on the raw path is
+		# false there; ResourceLoader.exists follows the remap.
 		errs.append("%s: 文件不存在 %s" % [id, ASSET_ROOT + url])
 
 	for corner in ["min", "max"]:
