@@ -252,6 +252,10 @@ func _instantiate(path: String) -> Node3D:
 	return packed.instantiate() as Node3D
 
 
+func bench_level() -> int:
+	return _bench_level
+
+
 func set_bench_level(level: int) -> void:
 	_bench_level = maxi(1, level)
 	apply_bench_level(_bench_level)
@@ -266,6 +270,15 @@ func set_lighting(ambient_energy: float, key_energy: float, fill_energy: float) 
 		_key_light.light_energy = key_energy
 	if _fill_light:
 		_fill_light.light_energy = fill_energy
+
+
+func upgrade_benches() -> bool:
+	if _bench_level >= 3:
+		return false
+	if not GameState.try_spend(60 * _bench_level):
+		return false
+	apply_bench_level(_bench_level + 1)
+	return true
 
 
 func apply_bench_level(level: int) -> void:

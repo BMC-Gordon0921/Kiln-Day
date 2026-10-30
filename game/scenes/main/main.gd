@@ -157,6 +157,11 @@ func _build_hud() -> void:
 	site_hud = SiteHud.new()
 	site_hud.codex_requested.connect(_open_codex)
 	site_hud.reset_view_requested.connect(_on_reset_view)
+	site_hud.upgrade_requested.connect(_on_upgrade)
+	site_hud.map_requested.connect(_on_map)
+	site_hud.help_requested.connect(_on_help)
+	site_hud.music_requested.connect(func(): _toast("音频系统尚未接入，将在音乐模块上线后开放。"))
+	site_hud.lang_requested.connect(func(): _toast("English 版正在制作中。"))
 	site_hud.name = "SiteHUD"
 	ui_root.add_child(site_hud)
 
@@ -717,6 +722,44 @@ func _can_work(id: String) -> bool:
 		"serve":
 			return fired
 	return false
+
+
+func _on_upgrade() -> void:
+	if world.upgrade_benches():
+		_toast("工作台升级完成 · Lv.%d" % world.bench_level())
+	else:
+		_toast("铜钱不足，或工作台已是最高等级。")
+
+
+func _on_map() -> void:
+	var lines := PackedStringArray()
+	for site in ContentPack.available_site_ids():
+		var data: Dictionary = Catalog.site(Catalog.load_catalog(), site)
+		lines.append("%s  %s" % ["●" if site == String(GameState.current_site_id()) else "○", String(data.get("short", site))])
+	_info("四方瓷韵 · 地图", "
+".join(lines) + "
+
+其余三站仍在布置中。")
+
+
+func _on_help() -> void:
+	_info("操作说明", "W A S D / 方向键  移动
+F  操作
+左键拖拽  旋转视角 · 滚轮  缩放
+Esc  关闭面板
+C  打开瓷器图鉴")
+
+
+func _info(title: String, body: String) -> void:
+	var dialog := AcceptDialog.new()
+	dialog.title = title
+	dialog.dialog_text = body
+	dialog.ok_button_text = "知道了"
+	dialog.min_size = Vector2i(460, 220)
+	add_child(dialog)
+	dialog.popup_centered()
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.canceled.connect(dialog.queue_free)
 
 
 func _on_reset_view() -> void:

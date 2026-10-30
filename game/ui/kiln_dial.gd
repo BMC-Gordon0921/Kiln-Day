@@ -4,8 +4,8 @@ extends Control
 ## and good bands, and a needle showing the current heat.
 
 const TRACK := Color("e9e1cf")
-const GOOD := Color("e7b877")
-const PERFECT := Color("7fae74")
+const GOOD := Color("e9b471")
+const PERFECT := Color("d4642c")
 const NEEDLE := Color("b0603c")
 
 var run: KilnRun
@@ -18,6 +18,7 @@ func _ready() -> void:
 	custom_minimum_size = Vector2(240, 220)
 	_value = Label.new()
 	_value.add_theme_font_size_override("font_size", 30)
+	_value.add_theme_color_override("font_color", Color("3a4239"))
 	_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_value.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	_value.offset_left = -60
@@ -27,7 +28,7 @@ func _ready() -> void:
 	add_child(_value)
 	_state = Label.new()
 	_state.add_theme_font_size_override("font_size", 12)
-	_state.add_theme_color_override("font_color", Color("858678"))
+	_state.add_theme_color_override("font_color", Color("5c6154"))
 	_state.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_state.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	_state.offset_left = -60

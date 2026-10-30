@@ -3,9 +3,20 @@ extends Control
 ## Small drawn illustration of the egg kiln for the firing sheet.
 
 
+var heat := 0.0
+var _t := 0.0
+
+
 func _ready() -> void:
 	custom_minimum_size = Vector2(300, 300)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+func _process(delta: float) -> void:
+	if heat <= 0.01:
+		return
+	_t += delta
+	queue_redraw()
 
 
 func _draw() -> void:
@@ -35,3 +46,25 @@ func _draw() -> void:
 	draw_circle(Vector2(cx, base_y - 30), 30, dark)
 	draw_rect(Rect2(cx - 30, base_y - 30, 60, 26), dark)
 	draw_arc(Vector2(cx, base_y - 30), 34, PI, TAU, 24, clunch, 6.0, true)
+	_draw_fire(cx, base_y - 30, base_y - body_h)
+
+
+func _draw_fire(cx: float, door_y: float, _dome_y: float) -> void:
+	var t := _t
+	var glow := clampf(heat, 0.0, 1.0)
+	for i in 5:
+		var k := 1.0 - float(i) / 5.0
+		var r := 26.0 + 20.0 * k + sin(t * 2.2 + i) * 2.0
+		draw_circle(Vector2(cx, door_y + 4), r, Color(1.0, 0.52, 0.18, 0.05 * glow * k))
+	for i in 3:
+		var sway := sin(t * 3.0 + i * 1.7) * 6.0
+		var h := (18.0 + 10.0 * i) * glow
+		var base := Vector2(cx - 10.0 + i * 10.0 + sway, door_y + 18.0)
+		var pts := PackedVector2Array([base, base + Vector2(-7, -h), base + Vector2(7, -h * 0.7)])
+		draw_colored_polygon(pts, Color(1.0, 0.62 - 0.1 * i, 0.22, 0.55 * glow))
+	for i in 6:
+		var phase := fmod(t * 0.6 + i * 0.17, 1.0)
+		var ex := cx + sin(i * 2.1 + t) * 18.0
+		var ey := door_y - phase * 110.0
+		var a := (1.0 - phase) * 0.7 * glow
+		draw_circle(Vector2(ex, ey), 2.0 + phase * 1.5, Color(1.0, 0.72, 0.35, a))

@@ -3,6 +3,11 @@ extends Control
 
 signal codex_requested
 signal reset_view_requested
+signal upgrade_requested
+signal map_requested
+signal help_requested
+signal music_requested
+signal lang_requested
 
 ## The world-screen chrome, ported from the legacy DOM stack (style.css: topbar,
 ## commissions rail, guide card, bottom bar).  Everything is built in code because
@@ -239,11 +244,11 @@ func _build_topbar() -> void:
 	var coin_unit := _label(money_row, "硬币", 12, TEXT, _sans)
 	coin_unit.size_flags_vertical = Control.SIZE_SHRINK_END
 
-	_action_button(actions, "↑  升级", 76)
-	_action_button(actions, "⌖  地图", 76)
-	_icon_button(actions, "♪")
-	_icon_button(actions, "EN")
-	_icon_button(actions, "?")
+	_action_button(actions, "↑  升级", 76).pressed.connect(func(): upgrade_requested.emit())
+	_action_button(actions, "⌖  地图", 76).pressed.connect(func(): map_requested.emit())
+	_icon_button(actions, "♪").pressed.connect(func(): music_requested.emit())
+	_icon_button(actions, "EN").pressed.connect(func(): lang_requested.emit())
+	_icon_button(actions, "?").pressed.connect(func(): help_requested.emit())
 
 
 func _build_rail() -> void:

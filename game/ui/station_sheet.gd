@@ -37,6 +37,7 @@ var _score_label: Label
 var _heat: KilnDial
 var _kiln_stats: Array[Label] = []
 var _kiln_bars: Array[ColorRect] = []
+var _kiln_icon: KilnIcon
 var _kiln_status: Label
 var _stoke_button: Button
 var _serve_label: Label
@@ -466,7 +467,8 @@ func _build_kiln() -> void:
 	art_style.set_corner_radius_all(14)
 	art_frame.add_theme_stylebox_override("panel", art_style)
 	row.add_child(art_frame)
-	art_frame.add_child(KilnIcon.new())
+	_kiln_icon = KilnIcon.new()
+	art_frame.add_child(_kiln_icon)
 
 	var right := VBoxContainer.new()
 	right.add_theme_constant_override("separation", 8)
@@ -528,6 +530,8 @@ func tick(delta: float) -> void:
 	if not visible:
 		return
 	if _station == "kiln" and _kiln != null:
+		if _kiln_icon != null:
+			_kiln_icon.heat = 0.0 if _kiln.finished() else _kiln.heat
 		if not _kiln.finished():
 			_kiln.tick(delta)
 			if _kiln_status != null:
