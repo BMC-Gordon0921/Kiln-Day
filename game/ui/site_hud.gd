@@ -77,6 +77,7 @@ func _ready() -> void:
 
 func _build_fonts() -> void:
 	_cjk = SystemFont.new()
+	_cjk.multichannel_signed_distance_field = true
 	_cjk.font_names = PackedStringArray([
 		"Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "SimHei", "sans-serif",
 	])
@@ -84,9 +85,11 @@ func _build_fonts() -> void:
 
 	_sans = load(SANS_PATH)
 	if _sans is FontFile:
+		(_sans as FontFile).multichannel_signed_distance_field = true
 		(_sans as FontFile).fallbacks = fallbacks
 	_display = load(DISPLAY_PATH)
 	if _display is FontFile:
+		(_display as FontFile).multichannel_signed_distance_field = true
 		(_display as FontFile).fallbacks = fallbacks
 
 	var bold := FontVariation.new()

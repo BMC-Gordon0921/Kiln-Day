@@ -133,10 +133,13 @@ func _message(station_id: String, state: Dictionary) -> String:
 ## Screen position from the projected player head, clamped to the legacy limits.
 func place_at(screen: Vector2, wrap_width: float) -> void:
 	var card_size := _panel.get_combined_minimum_size()
-	var left := clampf(screen.x + 128.0, 125.0, maxf(125.0, wrap_width - 125.0))
-	var top := maxf(4.0, screen.y - 76.0)
+	var half := card_size.x * 0.5
+	# Sit the card right above the sculptor's head instead of a fixed 128px to
+	# the right, and keep it fully inside the world view.
+	var left := clampf(screen.x, half + 12.0, maxf(half + 12.0, wrap_width - half - 12.0))
+	var top := maxf(4.0, screen.y - card_size.y - 8.0)
 	_panel.size = card_size
-	_panel.position = Vector2(left - card_size.x * 0.5, top)
+	_panel.position = Vector2(left - half, top)
 
 
 # Screen-space rect the card occupies, used by WorldLabels to hide plaques it

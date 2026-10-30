@@ -93,7 +93,8 @@ func _build_ui_root() -> void:
 	ui_root = Control.new()
 	ui_root.name = "UIRoot"
 	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	ui_root.mouse_filter = Control.MOUSE_FILTER_PASS
+	# IGNORE keeps the orbit camera receiving drags; children still take clicks.
+	ui_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(ui_root)
 
 
@@ -136,8 +137,7 @@ func _layout_world() -> void:
 	if world_view == null:
 		return
 	var size := get_viewport_rect().size
-	# Keep the legacy 1600x900 proportions on bigger windows instead of letting
-	# the HUD shrink relative to the scene.
+	# Scale the whole HUD so a 2560x1440 window does not shrink it to a postage stamp.
 	_ui_scale = clampf(minf(size.y / 900.0, size.x / 1600.0), 1.0, 1.8)
 	var top := TOPBAR_HEIGHT * _ui_scale
 	var bar := BOTTOMBAR_HEIGHT * _ui_scale
@@ -188,6 +188,30 @@ func _resize() -> void:
 	debug_label.text = "%d x %d" % [int(size.x), int(size.y)]
 
 
+func _probe_drag() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var before := world.camera.azimuth
+	var pos := Vector2(get_viewport_rect().size * 0.5)
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.position = pos
+	get_viewport().push_input(press)
+	var motion := InputEventMouseMotion.new()
+	motion.position = pos + Vector2(140, 0)
+	motion.relative = Vector2(140, 0)
+	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+	get_viewport().push_input(motion)
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.pressed = false
+	release.position = motion.position
+	get_viewport().push_input(release)
+	await get_tree().process_frame
+	print("[Site] DRAG azimuth %.4f -> %.4f" % [before, world.camera.azimuth])
+
+
 func _start() -> void:
 	_start_order()
 	var args := OS.get_cmdline_user_args()
@@ -213,6 +237,8 @@ func _start() -> void:
 			var target := SiteLayout.station(arg.substr(7))
 			if not target.is_empty():
 				_walk_target = target["approach"]
+		elif arg == "dragprobe":
+			_probe_drag()
 		elif arg == "clay":
 			# Test hook: jump straight to the "carrying clay" milestone so the
 			# tutorial/next-station copy can be captured without playing.
@@ -530,11 +556,15 @@ func _update_prompt() -> void:
 		labels.set_avoid_rect(Rect2())
 		_f_held = false
 		return
-	var head := Vector3(world.player.position2d.x, 2.25 + SiteWorld.SITE_LIFT,
+	var feet := Vector3(world.player.position2d.x, SiteWorld.SITE_LIFT,
 			world.player.position2d.y)
-	var screen: Vector2 = world.camera.unproject_position(head)
+	var p0: Vector2 = world.camera.unproject_position(feet)
+	var p1: Vector2 = world.camera.unproject_position(feet + Vector3.UP)
+	var metre := maxf(4.0, p0.y - p1.y)
+	var screen := Vector2(p0.x, p0.y - metre * 1.95)
 	prompt.show_for(str(nearest["id"]), true, _prompt_state())
-	prompt.place_at(screen, world_view.size.x)
+	prompt.place_at((screen + world_view.position) / _ui_scale,
+		world_view.size.x / _ui_scale)
 	# The callout and the F card would otherwise draw on top of each other.
 	labels.set_next_visible(false)
 	labels.set_avoid_rect(prompt.blocking_rect())
