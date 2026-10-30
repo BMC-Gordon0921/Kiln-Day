@@ -18,9 +18,9 @@ const KEY_POSITION := Vector3(-3.0, 14.0, 7.0)
 
 ## Calibrated against the legacy capture (see art/tools/parity_score.py). three.js
 ## intensities do not transfer 1:1, so these are measured, not copied.
-const AMBIENT_ENERGY := 0.22
-const KEY_ENERGY := 0.44
-const FILL_ENERGY := 0.95
+const AMBIENT_ENERGY := 0.32
+const KEY_ENERGY := 0.33
+const FILL_ENERGY := 0.62
 const FILL_POSITION := Vector3(8.0, 7.0, -5.0)
 
 var camera: OrbitCamera

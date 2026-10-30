@@ -34,7 +34,8 @@ var _font_title: Font
 var _canvas: SculptCanvas
 var _score_bar: ProgressBar
 var _score_label: Label
-var _heat: HeatBar
+var _heat: KilnDial
+var _kiln_stats: Array[Label] = []
 var _kiln_status: Label
 var _stoke_button: Button
 var _serve_label: Label
@@ -417,35 +418,74 @@ func _station_hint(station: String) -> String:
 
 
 func _build_kiln() -> void:
-	var hint := _label("按住空格或按钮鼓风，让白点停在绿色带里；停在暖色带也算良好。", 14, MUTED)
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_body.add_child(hint)
+	var copy := _label("固定 12 秒连续烧制：按住空格或按钮鼓风，让指针留在漂移的火候带内。完美与成功区累计越久，成色越好。", 13, MUTED)
+	copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_body.add_child(copy)
 
-	var frame := PanelContainer.new()
-	frame.custom_minimum_size = Vector2(0, 250)
-	frame.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	var frame_style := StyleBoxFlat.new()
-	frame_style.bg_color = Color("2f261e")
-	frame_style.set_corner_radius_all(12)
-	frame_style.content_margin_left = 8
-	frame_style.content_margin_right = 8
-	frame_style.content_margin_top = 8
-	frame_style.content_margin_bottom = 8
-	frame.add_theme_stylebox_override("panel", frame_style)
-	_body.add_child(frame)
-	_heat = HeatBar.new()
-	_heat.custom_minimum_size = Vector2(0, 234)
+	var tip := PanelContainer.new()
+	var tip_style := StyleBoxFlat.new()
+	tip_style.bg_color = Color("f4edda")
+	tip_style.set_corner_radius_all(9)
+	tip_style.content_margin_left = 16
+	tip_style.content_margin_right = 16
+	tip_style.content_margin_top = 10
+	tip_style.content_margin_bottom = 10
+	tip.add_theme_stylebox_override("panel", tip_style)
+	_body.add_child(tip)
+	var tip_copy := _label("守住窑火
+到窑炉开始烧制。按住空格或鼓风按钮升温，松开降温。", 12, TEXT)
+	tip.add_child(tip_copy)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 26)
+	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_body.add_child(row)
+
+	var art_frame := PanelContainer.new()
+	art_frame.custom_minimum_size = Vector2(320, 300)
+	var art_style := StyleBoxFlat.new()
+	art_style.bg_color = Color("f3ecd9")
+	art_style.set_corner_radius_all(14)
+	art_frame.add_theme_stylebox_override("panel", art_style)
+	row.add_child(art_frame)
+	art_frame.add_child(KilnIcon.new())
+
+	var right := VBoxContainer.new()
+	right.add_theme_constant_override("separation", 8)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(right)
+
+	var dial_row := HBoxContainer.new()
+	dial_row.add_theme_constant_override("separation", 18)
+	dial_row.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	right.add_child(dial_row)
+	_heat = KilnDial.new()
 	_heat.run = _kiln
-	frame.add_child(_heat)
+	dial_row.add_child(_heat)
 
-	_kiln_status = _label("热度 0% · 完美 0.0s · 良好 0.0s", 14, TEXT)
-	_body.add_child(_kiln_status)
+	var stats := VBoxContainer.new()
+	stats.custom_minimum_size = Vector2(220, 0)
+	stats.add_theme_constant_override("separation", 6)
+	stats.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	dial_row.add_child(stats)
+	_kiln_stats = []
+	for entry in [["完美", "perfect"], ["成功", "good"], ["一般", "fair"]]:
+		var line := HBoxContainer.new()
+		line.add_child(_label(String(entry[0]), 12, MUTED))
+		var value := _label("0.0s", 12, TEXT)
+		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		line.add_child(value)
+		stats.add_child(line)
+		_kiln_stats.append(value)
+
+	_kiln_status = _label("按「开始鼓风」点火，指针停进绿带。", 12, MUTED)
+	right.add_child(_kiln_status)
 
 	var button_row := HBoxContainer.new()
-	button_row.alignment = BoxContainer.ALIGNMENT_BEGIN
-	_body.add_child(button_row)
-	_stoke_button = _button("鼓风（按住）", true)
-	_stoke_button.custom_minimum_size = Vector2(260, 44)
+	right.add_child(button_row)
+	_stoke_button = _button("开始鼓风（按住）", true)
+	_stoke_button.custom_minimum_size = Vector2(240, 46)
 	_stoke_button.button_down.connect(func(): stoke.emit(true))
 	_stoke_button.button_up.connect(func(): stoke.emit(false))
 	button_row.add_child(_stoke_button)
@@ -462,6 +502,10 @@ func tick(delta: float) -> void:
 					_kiln.heat * 100.0,
 					float(_kiln.seconds["perfect"]),
 					float(_kiln.seconds["good"])]
+				if _kiln_stats.size() == 3:
+					_kiln_stats[0].text = "%.1fs" % float(_kiln.seconds["perfect"])
+					_kiln_stats[1].text = "%.1fs" % float(_kiln.seconds["good"])
+					_kiln_stats[2].text = "%.1fs" % float(_kiln.seconds["fair"])
 			if _kiln.finished():
 				_data["fired"] = true
 				if _stoke_button != null:
