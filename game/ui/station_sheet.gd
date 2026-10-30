@@ -36,6 +36,7 @@ var _score_bar: ProgressBar
 var _score_label: Label
 var _heat: KilnDial
 var _kiln_stats: Array[Label] = []
+var _kiln_bars: Array[ColorRect] = []
 var _kiln_status: Label
 var _stoke_button: Button
 var _serve_label: Label
@@ -198,6 +199,9 @@ func present(station: String, order: Dictionary, data: Dictionary) -> void:
 	_kicker.text = "第 %d 关 / 3 · 订单「%s」" % [
 		int(data.get("level", 1)), String(order.get("name", "瓷器"))]
 	_title.text = _station_name(station)
+	if station == "kiln":
+		_kicker.text = "提交前必经 · 瓷器窑炉"
+		_title.text = "守住窑火，烧出好瓷"
 	_clear_body()
 	match station:
 		"clay":
@@ -422,6 +426,20 @@ func _build_kiln() -> void:
 	copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_body.add_child(copy)
 
+	var strip := PanelContainer.new()
+	var strip_style := StyleBoxFlat.new()
+	strip_style.bg_color = Color("e6efe8")
+	strip_style.set_corner_radius_all(7)
+	strip_style.content_margin_left = 14
+	strip_style.content_margin_right = 14
+	strip_style.content_margin_top = 7
+	strip_style.content_margin_bottom = 7
+	strip.add_theme_stylebox_override("panel", strip_style)
+	_body.add_child(strip)
+	var secs := int(_data.get("elapsed", 0.0)) / 1000
+	var strip_text := _label("效率用时 %02d:%02d / 05:00 · 达标 +20%%" % [secs / 60, secs % 60], 12, Color("37503f"))
+	strip.add_child(strip_text)
+
 	var tip := PanelContainer.new()
 	var tip_style := StyleBoxFlat.new()
 	tip_style.bg_color = Color("f4edda")
@@ -469,9 +487,24 @@ func _build_kiln() -> void:
 	stats.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	dial_row.add_child(stats)
 	_kiln_stats = []
+	_kiln_bars = []
 	for entry in [["完美", "perfect"], ["成功", "good"], ["一般", "fair"]]:
 		var line := HBoxContainer.new()
+		line.add_theme_constant_override("separation", 8)
 		line.add_child(_label(String(entry[0]), 12, MUTED))
+		var track := Panel.new()
+		track.custom_minimum_size = Vector2(96, 5)
+		track.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var track_style := StyleBoxFlat.new()
+		track_style.bg_color = Color("e7dfcc")
+		track_style.set_corner_radius_all(3)
+		track.add_theme_stylebox_override("panel", track_style)
+		line.add_child(track)
+		var fill := ColorRect.new()
+		fill.color = Color("7fae74") if entry[1] == "perfect" else (Color("e7b877") if entry[1] == "good" else Color("cfc4ab"))
+		fill.custom_minimum_size = Vector2(0, 5)
+		track.add_child(fill)
+		_kiln_bars.append(fill)
 		var value := _label("0.0s", 12, TEXT)
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -484,7 +517,7 @@ func _build_kiln() -> void:
 
 	var button_row := HBoxContainer.new()
 	right.add_child(button_row)
-	_stoke_button = _button("开始鼓风（按住）", true)
+	_stoke_button = _button("开始烧制（按住鼓风）", true)
 	_stoke_button.custom_minimum_size = Vector2(240, 46)
 	_stoke_button.button_down.connect(func(): stoke.emit(true))
 	_stoke_button.button_up.connect(func(): stoke.emit(false))
@@ -506,6 +539,10 @@ func tick(delta: float) -> void:
 					_kiln_stats[0].text = "%.1fs" % float(_kiln.seconds["perfect"])
 					_kiln_stats[1].text = "%.1fs" % float(_kiln.seconds["good"])
 					_kiln_stats[2].text = "%.1fs" % float(_kiln.seconds["fair"])
+					for i in 3:
+						var key: String = ["perfect", "good", "fair"][i]
+						var ratio := clampf(float(_kiln.seconds[key]) / 12.0, 0.0, 1.0)
+						(_kiln_bars[i] as ColorRect).custom_minimum_size.x = 96.0 * ratio
 			if _kiln.finished():
 				_data["fired"] = true
 				if _stoke_button != null:

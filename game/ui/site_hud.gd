@@ -2,6 +2,7 @@ class_name SiteHud
 extends Control
 
 signal codex_requested
+signal reset_view_requested
 
 ## The world-screen chrome, ported from the legacy DOM stack (style.css: topbar,
 ## commissions rail, guide card, bottom bar).  Everything is built in code because
@@ -619,9 +620,7 @@ func _build_reset_button() -> void:
 
 
 func _on_reset_view() -> void:
-	var site_world := get_parent().get_node_or_null("WorldView/SubViewport/SiteWorld") as SiteWorld
-	if site_world != null and site_world.camera != null:
-		site_world.camera.go_home()
+	reset_view_requested.emit()
 
 
 func _on_coins_changed(coins: int) -> void:

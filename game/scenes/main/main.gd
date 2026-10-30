@@ -156,6 +156,7 @@ func _layout_world() -> void:
 func _build_hud() -> void:
 	site_hud = SiteHud.new()
 	site_hud.codex_requested.connect(_open_codex)
+	site_hud.reset_view_requested.connect(_on_reset_view)
 	site_hud.name = "SiteHUD"
 	ui_root.add_child(site_hud)
 
@@ -186,6 +187,19 @@ func _resize() -> void:
 	var size := world_view.size
 	world.camera.apply_viewport(size.x, size.y)
 	debug_label.text = "%d x %d" % [int(size.x), int(size.y)]
+
+
+func _probe_reset() -> void:
+	await get_tree().process_frame
+	world.camera.azimuth += 0.9
+	world.camera.apply()
+	print("[Site] RESET before %.4f" % world.camera.azimuth)
+	var button := site_hud.get_node_or_null("ResetView") as Button
+	if button != null:
+		button.pressed.emit()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	print("[Site] RESET after %.4f" % world.camera.azimuth)
 
 
 func _probe_drag() -> void:
@@ -237,6 +251,8 @@ func _start() -> void:
 			var target := SiteLayout.station(arg.substr(7))
 			if not target.is_empty():
 				_walk_target = target["approach"]
+		elif arg == "resetprobe":
+			_probe_reset()
 		elif arg == "dragprobe":
 			_probe_drag()
 		elif arg == "clay":
@@ -701,6 +717,11 @@ func _can_work(id: String) -> bool:
 		"serve":
 			return fired
 	return false
+
+
+func _on_reset_view() -> void:
+	if world != null and world.camera != null:
+		world.camera.go_home()
 
 
 func _open_codex() -> void:
