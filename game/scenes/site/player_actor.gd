@@ -35,6 +35,8 @@ func _ready() -> void:
 
 
 func build() -> void:
+	if _root != null:
+		return
 	var parts := SiteProps.build_sculptor(self, position2d.x, position2d.y)
 	_root = parts["group"]
 	body = parts["body"]

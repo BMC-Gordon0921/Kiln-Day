@@ -225,8 +225,11 @@ func _process(delta: float) -> void:
 func _build_player() -> void:
 	player = PlayerActor.new()
 	player.name = "Player"
+	player.add_to_group("player")
+	# add_child triggers PlayerActor._ready() -> build(); building again would
+	# create a second sculptor (the bug visible in 12-result.png).
 	content.add_child(player)
-	player.build()
+	print("[Site] PLAYERS=%d" % get_tree().get_nodes_in_group("player").size())
 
 
 func _build_hint() -> void:

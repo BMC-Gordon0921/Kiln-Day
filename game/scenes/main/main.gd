@@ -509,6 +509,8 @@ func _update_prompt() -> void:
 	if nearest.is_empty() or not _moved:
 		if prompt.visible:
 			prompt.visible = false
+		labels.set_next_visible(true)
+		labels.set_avoid_rect(Rect2())
 		_f_held = false
 		return
 	var head := Vector3(world.player.position2d.x, 2.25 + SiteWorld.SITE_LIFT,
@@ -516,6 +518,9 @@ func _update_prompt() -> void:
 	var screen: Vector2 = world.camera.unproject_position(head)
 	prompt.show_for(str(nearest["id"]), true, _prompt_state())
 	prompt.place_at(screen, world_view.size.x)
+	# The callout and the F card would otherwise draw on top of each other.
+	labels.set_next_visible(false)
+	labels.set_avoid_rect(prompt.blocking_rect())
 
 	var pressed := Input.is_physical_key_pressed(KEY_F)
 	if pressed and not _f_held and (sheet == null or not sheet.visible):
@@ -564,8 +569,12 @@ func _update_guide() -> void:
 	_guide_step = step
 	labels.set_active(_next_index())
 	var entry: Dictionary = GUIDE[mini(step, GUIDE.size() - 1)]
-	site_hud.set_guide(String(entry["num"]), String(entry["kicker"]),
-		String(entry["title"]), String(entry["copy"]))
+	var title := String(entry["title"])
+	var copy := String(entry["copy"])
+	if step == 0 and order_index > 0:
+		title = "再开一窑"
+		copy = "去取泥台领取下一单的瓷泥。"
+	site_hud.set_guide(String(entry["num"]), String(entry["kicker"]), title, copy)
 
 
 ## Legacy nextStation(): first bench in STATIONS order that still needs work.

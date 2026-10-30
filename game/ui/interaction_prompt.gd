@@ -139,6 +139,14 @@ func place_at(screen: Vector2, wrap_width: float) -> void:
 	_panel.position = Vector2(left - card_size.x * 0.5, top)
 
 
+# Screen-space rect the card occupies, used by WorldLabels to hide plaques it
+# would otherwise cover.
+func blocking_rect() -> Rect2:
+	if _panel == null:
+		return Rect2()
+	return _panel.get_global_rect()
+
+
 func set_hold(progress: float) -> void:
 	if _key != null and _key.has_method("set_progress"):
 		_key.set_progress(progress)

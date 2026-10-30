@@ -21,6 +21,8 @@ const FONT_NAMES := [
 ]
 
 var active_index := -1
+var next_visible := true
+var avoid_rect := Rect2()
 
 var _world: SiteWorld
 var _chips: Array[Dictionary] = []
@@ -138,6 +140,23 @@ func _draw_arrow() -> void:
 	_next_arrow.draw_colored_polygon(tip, color)
 
 
+func set_avoid_rect(rect: Rect2) -> void:
+	avoid_rect = rect
+
+
+func set_next_visible(value: bool) -> void:
+	next_visible = value
+	_apply_next_visibility()
+
+
+func _apply_next_visibility() -> void:
+	var show := next_visible and active_index >= 0 and active_index < _chips.size()
+	if _next_tag != null:
+		_next_tag.visible = show
+	if _next_arrow != null:
+		_next_arrow.visible = show
+
+
 func set_active(index: int) -> void:
 	if index == active_index:
 		return
@@ -156,11 +175,7 @@ func set_active(index: int) -> void:
 	if index >= 0 and index < _chips.size():
 		var entry: Dictionary = SiteLayout.STATIONS[index]
 		_next_label.text = "下一站 · %s" % str(entry["name"])
-		_next_tag.visible = true
-		_next_arrow.visible = true
-	else:
-		_next_tag.visible = false
-		_next_arrow.visible = false
+	_apply_next_visibility()
 
 
 func _process(_delta: float) -> void:
@@ -173,12 +188,14 @@ func _process(_delta: float) -> void:
 		if camera.is_position_behind(anchor):
 			chip.visible = false
 			continue
-		chip.visible = true
 		var screen := camera.unproject_position(anchor)
 		var size := chip.get_combined_minimum_size()
 		chip.size = size
 		# The DOM version translates the plaque so its bottom edge sits on the anchor.
 		chip.position = (screen - Vector2(size.x * 0.5, size.y)).round()
+		# chip.position is local to this Control; avoid_rect is global.
+		var chip_rect := Rect2(chip.position + get_global_position(), size)
+		chip.visible = avoid_rect.size == Vector2.ZERO or not avoid_rect.intersects(chip_rect)
 	if active_index >= 0 and active_index < _chips.size():
 		var active_chip: PanelContainer = _chips[active_index]["node"]
 		var tag_size := _next_tag.get_combined_minimum_size()
