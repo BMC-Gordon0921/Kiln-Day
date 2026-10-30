@@ -9,7 +9,8 @@ extends RefCounted
 ##   2) the two axes are tried separately, which lets the actor slide along a
 ##      bench instead of sticking to it;
 ##   3) the camera right vector is flattened onto the ground plane and the
-##      forward axis is `right × up`, matching the three.js build exactly.
+##      forward axis is `up × right` (away from the camera, i.e. into the
+##      screen). The legacy build used `right × up`, which walked W/S backwards.
 ##
 ## No nodes here on purpose: the headless suite checks this behaviour directly.
 
@@ -49,7 +50,7 @@ static func camera_axes(camera: Node3D) -> Array:
 	if right.length_squared() < 1e-6:
 		right = Vector3.RIGHT
 	right = right.normalized()
-	return [right, right.cross(Vector3.UP)]
+	return [right, Vector3.UP.cross(right)]
 
 
 ## Shortest-arc turn towards `target`, eased by SiteLayout.TURN_RATE per second.

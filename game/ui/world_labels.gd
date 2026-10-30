@@ -60,9 +60,9 @@ func _build() -> void:
 		num.text = str(i + 1)
 		num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		num.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		num.custom_minimum_size = Vector2(17, 17)
+		num.custom_minimum_size = Vector2(21, 21)
 		num.add_theme_font_override("font", _font)
-		num.add_theme_font_size_override("font_size", 12)
+		num.add_theme_font_size_override("font_size", 14)
 		num.add_theme_color_override("font_color", NUM_TEXT)
 		num.add_theme_stylebox_override("normal", _num_style(false))
 		row.add_child(num)
@@ -70,14 +70,14 @@ func _build() -> void:
 		var title := Label.new()
 		title.text = str(entry["name"])
 		title.add_theme_font_override("font", _font)
-		title.add_theme_font_size_override("font_size", 13)
+		title.add_theme_font_size_override("font_size", 15)
 		title.add_theme_color_override("font_color", CHIP_TEXT)
 		row.add_child(title)
 
 		var level := Label.new()
 		level.text = "Lv.1"
 		level.add_theme_font_override("font", _font)
-		level.add_theme_font_size_override("font_size", 12)
+		level.add_theme_font_size_override("font_size", 13)
 		level.add_theme_color_override("font_color", MUTED)
 		row.add_child(level)
 
@@ -115,7 +115,7 @@ func _build_next_tag() -> void:
 	add_child(_next_tag)
 	_next_label = Label.new()
 	_next_label.add_theme_font_override("font", _font)
-	_next_label.add_theme_font_size_override("font_size", 11)
+	_next_label.add_theme_font_size_override("font_size", 13)
 	_next_label.add_theme_color_override("font_color", Color("9c6534"))
 	_next_tag.add_child(_next_label)
 

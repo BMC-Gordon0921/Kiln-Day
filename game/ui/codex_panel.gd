@@ -15,7 +15,7 @@ const GREEN := Color("374e3c")
 const GREEN_SOFT := Color("e0e5d3")
 const GOLD := Color("bd8a3d")
 
-const CARD_SIZE := Vector2(980, 610)
+const CARD_SIZE := Vector2(1040, 660)
 const PRESET_PATH := "res://assets/reference/preset-%d.png"
 
 var _dim: ColorRect
@@ -246,7 +246,7 @@ func _label(text: String, size: int, color: Color, bold := false, font: Font = n
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_override("font", font if font != null else _font_body)
-	label.add_theme_font_size_override("font_size", size)
+	label.add_theme_font_size_override("font_size", roundi(size * 1.08))
 	label.add_theme_color_override("font_color", color)
 	if bold:
 		var variation := FontVariation.new()

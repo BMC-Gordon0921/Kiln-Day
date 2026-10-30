@@ -9,7 +9,7 @@ const BACKDROP_OUTER := Color("e4e3d6")
 ## Legacy #world-wrap box: top 95px, bottom 58px, right 265px (see legacy style.css).
 const TOPBAR_HEIGHT := 95.0
 const BOTTOMBAR_HEIGHT := 58.0
-const RIGHT_RAIL_WIDTH := 265.0
+const RIGHT_RAIL_WIDTH := 293.0
 const MIN_WORLD_HEIGHT := 760.0
 
 const BACKDROP_SHADER := """
@@ -678,6 +678,7 @@ func _open_station(id: String) -> void:
 		_start_kiln()
 	sheet.present(id, orders[order_index], {
 		"level": order_index + 1,
+		"preset_index": order_index,
 		"has_clay": world.player.has_clay,
 		"fired": fired,
 		"grade": grade,

@@ -77,7 +77,7 @@ func _build() -> void:
 	_panel.add_child(row)
 
 	_key = preload("res://ui/interact_key.gd").new()
-	_key.custom_minimum_size = Vector2(39, 39)
+	_key.custom_minimum_size = Vector2(44, 44)
 	_key.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(_key)
 
@@ -89,13 +89,13 @@ func _build() -> void:
 
 	_title = Label.new()
 	_title.add_theme_font_override("font", _font)
-	_title.add_theme_font_size_override("font_size", 12)
+	_title.add_theme_font_size_override("font_size", 14)
 	_title.add_theme_color_override("font_color", FG)
 	column.add_child(_title)
 
 	_sub = Label.new()
 	_sub.add_theme_font_override("font", _font)
-	_sub.add_theme_font_size_override("font_size", 12)
+	_sub.add_theme_font_size_override("font_size", 14)
 	_sub.add_theme_color_override("font_color", SUB)
 	_sub.add_theme_constant_override("line_spacing", 4)
 	column.add_child(_sub)

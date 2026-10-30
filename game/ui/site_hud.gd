@@ -8,9 +8,10 @@ signal codex_requested
 ## the layout mirrors the CSS box model one-to-one; the numbers in the comments are
 ## the computed values captured in art/data/legacy-screen-tokens.json.
 
+const FONT_SCALE := 1.15
 const TOPBAR_HEIGHT := 95.0
 const BOTTOMBAR_HEIGHT := 58.0
-const RAIL_WIDTH := 222.0
+const RAIL_WIDTH := 250.0
 const RAIL_RIGHT := 26.0
 const RAIL_TOP := 125.0
 
@@ -100,7 +101,7 @@ func _build_fonts() -> void:
 
 	var theme := Theme.new()
 	theme.default_font = _sans
-	theme.default_font_size = 13
+	theme.default_font_size = 15
 	theme.set_color("font_color", "Label", TEXT)
 	self.theme = theme
 
@@ -135,23 +136,15 @@ func _build_topbar() -> void:
 	mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mark_holder := Panel.new()
+	var mark_holder := Control.new()
 	mark_holder.custom_minimum_size = Vector2(48, 48)
 	mark_holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	mark_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mark_style := StyleBoxFlat.new()
-	mark_style.bg_color = Color("b46a48")
-	mark_style.set_corner_radius_all(15)
-	mark_holder.add_theme_stylebox_override("panel", mark_style)
-	mark_holder.clip_contents = true
 	mark_holder.rotation = deg_to_rad(-7.0)
 	mark_holder.pivot_offset = Vector2(24, 24)
 	mark_holder.add_child(mark)
+	# logo-mark.png already carries the rust tile shape and transparency.
 	mark.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	mark.offset_left = 7
-	mark.offset_top = 6
-	mark.offset_right = -7
-	mark.offset_bottom = -6
 	brand.add_child(mark_holder)
 
 	var brand_text := VBoxContainer.new()
@@ -170,7 +163,7 @@ func _build_topbar() -> void:
 	wordmark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	var reg_box := MarginContainer.new()
 	reg_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	reg_box.add_theme_constant_override("margin_top", 12)
+	reg_box.add_theme_constant_override("margin_top", 6)
 	title_row.add_child(reg_box)
 	var registered := _label(reg_box, "®", 12, TEXT, _sans)
 	var subtitle := _label(brand_text, "四方瓷韵 · 瓷器工坊", 12, TEXT, _bold)
@@ -361,14 +354,24 @@ func _build_reference_card() -> void:
 	head.add_child(spacer)
 	_label(head, "80% 通关", 11, SOFT, _bold)
 
+	var art_holder := PanelContainer.new()
+	art_holder.custom_minimum_size = Vector2(0, 150)
+	art_holder.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	art_holder.clip_contents = true
+	art_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var art_style := StyleBoxFlat.new()
+	art_style.bg_color = Color("f1e8d2")
+	art_style.set_corner_radius_all(6)
+	art_holder.add_theme_stylebox_override("panel", art_style)
+	box.add_child(art_holder)
 	var art := TextureRect.new()
 	art.texture = load(PRESET_PATH % clampi(GameState.order_index, 0, 2))
-	art.custom_minimum_size = Vector2(196, 150)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_reference_art = art
-	box.add_child(art)
+	art_holder.add_child(art)
 
 	var name: String = _order.get("name", "一抹青花罐")
 	_order_name_label = _label(box, name, 13, TEXT, _bold)
@@ -467,9 +470,9 @@ func _build_guide() -> void:
 	_guide.anchor_right = 0.0
 	_guide.anchor_bottom = 1.0
 	_guide.offset_left = 27
-	_guide.offset_right = 27 + 315
-	_guide.offset_top = -(85 + 96)
-	_guide.offset_bottom = -85
+	_guide.offset_right = 27 + 352
+	_guide.offset_top = -(80 + 104)
+	_guide.offset_bottom = -80
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.973, 0.961, 0.918, 0.92)
 	style.set_corner_radius_all(12)
@@ -493,7 +496,7 @@ func _build_guide() -> void:
 	_guide.add_child(row)
 
 	var number_panel := PanelContainer.new()
-	number_panel.custom_minimum_size = Vector2(29, 29)
+	number_panel.custom_minimum_size = Vector2(34, 34)
 	number_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	var number_style := StyleBoxFlat.new()
 	number_style.bg_color = GREEN_SOFT
@@ -596,7 +599,7 @@ func _build_reset_button() -> void:
 	button.name = "ResetView"
 	button.position = Vector2(20, TOPBAR_HEIGHT + 20)
 	button.custom_minimum_size = Vector2(108, 34)
-	button.add_theme_font_size_override("font_size", 11)
+	button.add_theme_font_size_override("font_size", 15)
 	button.add_theme_color_override("font_color", Color("56604f"))
 	for state in ["normal", "hover", "pressed"]:
 		var style := StyleBoxFlat.new()
@@ -652,7 +655,7 @@ func _action_button(parent: Control, text: String, width: float) -> Button:
 	button.custom_minimum_size = Vector2(width, 34)
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	button.add_theme_font_override("font", _sans)
-	button.add_theme_font_size_override("font_size", 11)
+	button.add_theme_font_size_override("font_size", 15)
 	button.add_theme_color_override("font_color", Color("56604f"))
 	for state in ["normal", "hover", "pressed"]:
 		var style := StyleBoxFlat.new()
@@ -676,7 +679,7 @@ func _icon_button(parent: Control, text: String) -> Button:
 	button.custom_minimum_size = Vector2(34, 34)
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	button.add_theme_font_override("font", _sans)
-	button.add_theme_font_size_override("font_size", 13)
+	button.add_theme_font_size_override("font_size", 15)
 	button.add_theme_color_override("font_color", Color("56604f"))
 	for state in ["normal", "hover", "pressed"]:
 		var style := StyleBoxFlat.new()
@@ -720,7 +723,7 @@ func _label(parent: Control, text: String, size: int, color: Color, font: Font) 
 	label.text = text
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.add_theme_font_override("font", font)
-	label.add_theme_font_size_override("font_size", size)
+	label.add_theme_font_size_override("font_size", roundi(size * FONT_SCALE))
 	label.add_theme_color_override("font_color", color)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	parent.add_child(label)

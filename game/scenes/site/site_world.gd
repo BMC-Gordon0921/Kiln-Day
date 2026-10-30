@@ -50,6 +50,7 @@ var cast: Node3D
 var _key_light: DirectionalLight3D
 var _fill_light: DirectionalLight3D
 var _bench_level := 1
+var _bench_tiers := {}
 var _bounds := AABB()
 var _bounds_found := false
 
@@ -141,12 +142,14 @@ func _calibrate_materials() -> void:
 					if lower.begins_with(key):
 						factor = PALETTE[key]
 						break
-				if factor == Color.WHITE:
-					continue
 				var id := material.get_instance_id()
 				if not overrides.has(id):
 					var copy := material.duplicate() as BaseMaterial3D
 					copy.albedo_color = copy.albedo_color * factor
+					# The ground is a dense grid texture seen at a grazing angle:
+					# nearest/linear filtering without mipmaps is what produced the
+					# moiré. Anisotropic mipmaps keep the far tiles calm.
+					copy.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 					overrides[id] = copy
 				mi.set_surface_override_material(surface, overrides[id])
 		for child in node.get_children():
@@ -265,14 +268,16 @@ func set_lighting(ambient_energy: float, key_energy: float, fill_energy: float) 
 
 
 func apply_bench_level(level: int) -> void:
+	if _bench_tiers.is_empty():
+		_bench_tiers = BenchTiers.DATA
 	for id in bench_roots:
-		_apply_tier_visibility(bench_roots[id], level)
+		_apply_tier_visibility(bench_roots[id], level, str(id))
 
 
-## Bench props carry a `tier` meta from the Blender export: base / upgrade1 / upgrade2.
-func _apply_tier_visibility(node: Node, level: int) -> void:
-	if node.has_meta("tier"):
-		var tier: String = str(node.get_meta("tier"))
+func _apply_tier_visibility(node: Node, level: int, bench_id := "") -> void:
+	var table: Dictionary = _bench_tiers.get(bench_id, {})
+	var tier := str(table.get(String(node.name), ""))
+	if tier != "":
 		var needed := 1
 		if tier == "upgrade1":
 			needed = 2
@@ -282,7 +287,7 @@ func _apply_tier_visibility(node: Node, level: int) -> void:
 		if not node.visible:
 			return
 	for child in node.get_children():
-		_apply_tier_visibility(child, level)
+		_apply_tier_visibility(child, level, bench_id)
 
 
 func _build_camera() -> void:

@@ -19,7 +19,8 @@ const BORDER := Color("dcdacb")
 const GREEN := Color("374e3c")
 const GREEN_SOFT := Color("e0e5d3")
 
-const CARD_SIZE := Vector2(980, 610)
+const CARD_SIZE := Vector2(1040, 660)
+const PRESET_PATH := "res://assets/reference/preset-%d.png"
 
 var _dim: ColorRect
 var _card: PanelContainer
@@ -156,7 +157,7 @@ func _label(text: String, size: int, color: Color,
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_override("font", font if font != null else _font_body)
-	label.add_theme_font_size_override("font_size", size)
+	label.add_theme_font_size_override("font_size", roundi(size * 1.08))
 	label.add_theme_color_override("font_color", color)
 	return label
 
@@ -253,7 +254,7 @@ func _build_clay() -> void:
 	frame.add_theme_stylebox_override("panel", box)
 	row.add_child(frame)
 	var art := TextureRect.new()
-	art.texture = load("res://assets/reference/preset-0.png")
+	art.texture = load(PRESET_PATH % clampi(int(_data.get("preset_index", 0)), 0, 2))
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.custom_minimum_size = Vector2(260, 260)
@@ -416,16 +417,38 @@ func _station_hint(station: String) -> String:
 
 
 func _build_kiln() -> void:
+	var hint := _label("按住空格或按钮鼓风，让白点停在绿色带里；停在暖色带也算良好。", 14, MUTED)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_body.add_child(hint)
+
+	var frame := PanelContainer.new()
+	frame.custom_minimum_size = Vector2(0, 250)
+	frame.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	var frame_style := StyleBoxFlat.new()
+	frame_style.bg_color = Color("2f261e")
+	frame_style.set_corner_radius_all(12)
+	frame_style.content_margin_left = 8
+	frame_style.content_margin_right = 8
+	frame_style.content_margin_top = 8
+	frame_style.content_margin_bottom = 8
+	frame.add_theme_stylebox_override("panel", frame_style)
+	_body.add_child(frame)
 	_heat = HeatBar.new()
-	_heat.custom_minimum_size = Vector2(0, 200)
+	_heat.custom_minimum_size = Vector2(0, 234)
 	_heat.run = _kiln
-	_body.add_child(_heat)
-	_kiln_status = _label("按住鼓风，把热度压在暖色带里。", 14, TEXT)
+	frame.add_child(_heat)
+
+	_kiln_status = _label("热度 0% · 完美 0.0s · 良好 0.0s", 14, TEXT)
 	_body.add_child(_kiln_status)
+
+	var button_row := HBoxContainer.new()
+	button_row.alignment = BoxContainer.ALIGNMENT_BEGIN
+	_body.add_child(button_row)
 	_stoke_button = _button("鼓风（按住）", true)
+	_stoke_button.custom_minimum_size = Vector2(260, 44)
 	_stoke_button.button_down.connect(func(): stoke.emit(true))
 	_stoke_button.button_up.connect(func(): stoke.emit(false))
-	_body.add_child(_stoke_button)
+	button_row.add_child(_stoke_button)
 
 
 func tick(delta: float) -> void:
@@ -481,7 +504,7 @@ func _build_serve() -> void:
 	frame.add_theme_stylebox_override("panel", box)
 	row.add_child(frame)
 	var art := TextureRect.new()
-	art.texture = load("res://assets/reference/preset-0.png")
+	art.texture = load(PRESET_PATH % clampi(int(_data.get("preset_index", 0)), 0, 2))
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.custom_minimum_size = Vector2(200, 200)
