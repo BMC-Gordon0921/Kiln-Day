@@ -3,11 +3,12 @@
 param(
     [string]$LogName = 'shot.log',
     [string]$Scene = '',
-    [string[]]$Extra = @()
+    [string[]]$Extra = @(),
+    [string]$Resolution = '1600x900'
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '_env.ps1')
-$GodotArgs = @('--path', $GameDir, '--resolution', '1600x900')
+$GodotArgs = @('--path', $GameDir, '--resolution', $Resolution)
 if ($Scene -ne '') { $GodotArgs += $Scene }
 $GodotArgs += '--'
 foreach ($item in $Extra) {

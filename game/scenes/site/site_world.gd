@@ -99,11 +99,12 @@ func _build_lights() -> void:
 	_key_light.light_color = KEY_COLOR
 	_key_light.light_energy = KEY_ENERGY
 	_key_light.shadow_enabled = true
-	_key_light.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
-	_key_light.directional_shadow_max_distance = 45.0
-	_key_light.shadow_bias = -0.0002
-	_key_light.shadow_normal_bias = 0.045
-	_key_light.shadow_blur = 0.5
+	_key_light.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	_key_light.directional_shadow_max_distance = 38.0
+	_key_light.directional_shadow_blend_splits = true
+	_key_light.shadow_bias = 0.02
+	_key_light.shadow_normal_bias = 0.5
+	_key_light.shadow_blur = 1.0
 	content.add_child(_key_light)
 	_key_light.look_at_from_position(KEY_POSITION, Vector3.ZERO, Vector3.UP)
 

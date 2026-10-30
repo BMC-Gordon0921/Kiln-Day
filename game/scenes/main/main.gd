@@ -32,6 +32,8 @@ var world_viewport: SubViewport
 var labels: WorldLabels
 var prompt: InteractionPrompt
 var site_hud: SiteHud
+var ui_root: Control
+var _ui_scale := 1.0
 var hud_layer: CanvasLayer
 var debug_label: Label
 
@@ -62,8 +64,11 @@ var _moved := false
 
 func _ready() -> void:
 	_build_backdrop()
+	_build_ui_root()
 	_build_world()
 	_build_hud()
+	# UIRoot must draw above the SubViewportContainer it was created before.
+	move_child(ui_root, get_child_count() - 1)
 	_resize()
 	get_viewport().size_changed.connect(_resize)
 	call_deferred("_start")
@@ -84,6 +89,14 @@ func _build_backdrop() -> void:
 	add_child(backdrop)
 
 
+func _build_ui_root() -> void:
+	ui_root = Control.new()
+	ui_root.name = "UIRoot"
+	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ui_root.mouse_filter = Control.MOUSE_FILTER_PASS
+	add_child(ui_root)
+
+
 func _build_world() -> void:
 	var container := SubViewportContainer.new()
 	container.name = "WorldView"
@@ -97,7 +110,7 @@ func _build_world() -> void:
 	world_viewport.name = "SubViewport"
 	world_viewport.transparent_bg = true
 	world_viewport.own_world_3d = true
-	world_viewport.msaa_3d = Viewport.MSAA_2X
+	world_viewport.msaa_3d = Viewport.MSAA_4X
 	world_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	container.add_child(world_viewport)
 
@@ -108,14 +121,14 @@ func _build_world() -> void:
 
 	labels = WorldLabels.new()
 	labels.name = "StationLabels"
-	container.add_child(labels)
+	ui_root.add_child(labels)
 	labels.setup(world)
 
 	# The legacy #interaction card lives inside #world-wrap, so it is a sibling of
 	# the 3D view and shares its coordinate space.
 	prompt = InteractionPrompt.new()
 	prompt.name = "Interaction"
-	container.add_child(prompt)
+	ui_root.add_child(prompt)
 
 
 ## Keep the 3D viewport inside the same rectangle as the legacy #world-wrap.
@@ -123,24 +136,28 @@ func _layout_world() -> void:
 	if world_view == null:
 		return
 	var size := get_viewport_rect().size
-	var top := TOPBAR_HEIGHT
-	var bar := BOTTOMBAR_HEIGHT
-	var rail := RIGHT_RAIL_WIDTH
-	if size.y <= 760.0:
-		top = 79.0
-	if size.x <= 1100.0:
-		rail = 220.0
+	# Keep the legacy 1600x900 proportions on bigger windows instead of letting
+	# the HUD shrink relative to the scene.
+	_ui_scale = clampf(minf(size.y / 900.0, size.x / 1600.0), 1.0, 1.8)
+	var top := TOPBAR_HEIGHT * _ui_scale
+	var bar := BOTTOMBAR_HEIGHT * _ui_scale
+	var rail := RIGHT_RAIL_WIDTH * _ui_scale
 	world_view.offset_left = 0.0
 	world_view.offset_top = top
 	world_view.offset_right = -rail
 	world_view.offset_bottom = -bar
+	if ui_root != null:
+		ui_root.scale = Vector2(_ui_scale, _ui_scale)
+		ui_root.size = size / _ui_scale
+	if labels != null:
+		labels.set_view(world_view.position, _ui_scale)
 
 
 func _build_hud() -> void:
 	site_hud = SiteHud.new()
 	site_hud.codex_requested.connect(_open_codex)
 	site_hud.name = "SiteHUD"
-	add_child(site_hud)
+	ui_root.add_child(site_hud)
 
 	hud_layer = CanvasLayer.new()
 	hud_layer.name = "Debug"
@@ -154,7 +171,7 @@ func _build_hud() -> void:
 
 	sheet = StationSheet.new()
 	sheet.name = "StationSheet"
-	add_child(sheet)
+	ui_root.add_child(sheet)
 	sheet.take_clay.connect(_on_take_clay)
 	sheet.finish_step.connect(_on_finish_step)
 	sheet.stoke.connect(_on_stoke)

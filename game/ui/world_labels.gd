@@ -23,6 +23,15 @@ const FONT_NAMES := [
 var active_index := -1
 var next_visible := true
 var avoid_rect := Rect2()
+var view_origin := Vector2.ZERO
+var local_scale := 1.0
+
+
+## The plaques live under the scaled UI root, so camera pixels need converting
+## to that local space (and back for the prompt overlap test).
+func set_view(origin: Vector2, factor: float) -> void:
+	view_origin = origin
+	local_scale = maxf(factor, 0.001)
 
 var _world: SiteWorld
 var _chips: Array[Dictionary] = []
@@ -182,20 +191,29 @@ func _process(_delta: float) -> void:
 	if _world == null or _world.camera == null:
 		return
 	var camera := _world.camera
+	var placed: Array[Rect2] = []
 	for chip_data in _chips:
 		var chip: PanelContainer = chip_data["node"]
 		var anchor: Vector3 = chip_data["anchor"]
 		if camera.is_position_behind(anchor):
 			chip.visible = false
 			continue
-		var screen := camera.unproject_position(anchor)
+		var screen := camera.unproject_position(anchor) + view_origin
 		var size := chip.get_combined_minimum_size()
 		chip.size = size
 		# The DOM version translates the plaque so its bottom edge sits on the anchor.
-		chip.position = (screen - Vector2(size.x * 0.5, size.y)).round()
-		# chip.position is local to this Control; avoid_rect is global.
-		var chip_rect := Rect2(chip.position + get_global_position(), size)
+		chip.position = ((screen - Vector2(size.x * 0.5, size.y)) / local_scale).round()
+		# chip.position is local to the scaled UI root; avoid_rect is global screen.
+		var chip_rect := Rect2(chip.position * local_scale + view_origin, size * local_scale)
 		chip.visible = avoid_rect.size == Vector2.ZERO or not avoid_rect.intersects(chip_rect)
+		# Nudge plaques that would overlap a neighbour so dense clusters stay readable.
+		if chip.visible:
+			var rect := Rect2(chip.position, size)
+			for other in placed:
+				if rect.intersects(other):
+					rect.position.y = other.end.y + 2.0
+			chip.position = rect.position
+			placed.append(rect)
 	if active_index >= 0 and active_index < _chips.size():
 		var active_chip: PanelContainer = _chips[active_index]["node"]
 		var tag_size := _next_tag.get_combined_minimum_size()
