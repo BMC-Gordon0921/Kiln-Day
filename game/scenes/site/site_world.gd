@@ -50,6 +50,7 @@ var cast: Node3D
 var _key_light: DirectionalLight3D
 var _fill_light: DirectionalLight3D
 var _bench_level := 1
+var _bench_levels: Dictionary = {}
 var _bench_tiers := {}
 var _bounds := AABB()
 var _bounds_found := false
@@ -168,7 +169,8 @@ func _build_benches() -> void:
 		root.position = Vector3(entry["x"], 0.0, entry["z"])
 		content.add_child(root)
 		bench_roots[id] = root
-		apply_bench_level(_bench_level)
+		_bench_levels[id] = 1
+	apply_bench_level(1)
 
 
 ## Characters and the signboard are procedural in the legacy build, so they are
@@ -252,8 +254,10 @@ func _instantiate(path: String) -> Node3D:
 	return packed.instantiate() as Node3D
 
 
-func bench_level() -> int:
-	return _bench_level
+func bench_level(id := "") -> int:
+	if id == "":
+		return _bench_level
+	return int(_bench_levels.get(id, 1))
 
 
 func set_bench_level(level: int) -> void:
@@ -272,13 +276,15 @@ func set_lighting(ambient_energy: float, key_energy: float, fill_energy: float) 
 		_fill_light.light_energy = fill_energy
 
 
-func upgrade_benches() -> bool:
-	if _bench_level >= 3:
+func upgrade_bench(id: String) -> bool:
+	var level := bench_level(id)
+	if level >= 3:
 		return false
-	if not GameState.try_spend(60 * _bench_level):
+	if not GameState.try_spend(60 * level):
 		return false
-	_bench_level += 1
-	apply_bench_level(_bench_level)
+	_bench_levels[id] = level + 1
+	if bench_roots.has(id):
+		_apply_tier_visibility(bench_roots[id], level + 1, id)
 	return true
 
 
@@ -286,6 +292,7 @@ func apply_bench_level(level: int) -> void:
 	if _bench_tiers.is_empty():
 		_bench_tiers = BenchTiers.DATA
 	for id in bench_roots:
+		_bench_levels[str(id)] = level
 		_apply_tier_visibility(bench_roots[id], level, str(id))
 
 

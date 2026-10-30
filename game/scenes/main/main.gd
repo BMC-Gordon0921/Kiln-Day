@@ -258,6 +258,15 @@ func _start() -> void:
 				_walk_target = target["approach"]
 		elif arg == "upgrade":
 			_on_upgrade()
+		elif arg == "stoke":
+			var ev := InputEventKey.new()
+			ev.physical_keycode = KEY_SPACE
+			ev.pressed = true
+			Input.parse_input_event(ev)
+		elif arg == "help":
+			_on_help()
+		elif arg == "map":
+			_on_map()
 		elif arg == "resetprobe":
 			_probe_reset()
 		elif arg == "dragprobe":
@@ -726,42 +735,88 @@ func _can_work(id: String) -> bool:
 	return false
 
 
+var _modal: ModalCard
+
+
+func _card() -> ModalCard:
+	if _modal == null:
+		_modal = ModalCard.new()
+		ui_root.add_child(_modal)
+	return _modal
+
+
 func _on_upgrade() -> void:
-	if world.upgrade_benches():
-		_toast("工作台升级完成 · Lv.%d" % world.bench_level())
-	else:
-		_toast("铜钱不足，或工作台已是最高等级。")
+	var card := _card()
+	card.open("工坊 · 升级", "工作台升级")
+	var body := card.body()
+	body.add_child(card.line("每台工作台单独升级，费用为 60 × 当前等级，最高 Lv.3。", 13))
+	for entry in SiteLayout.STATIONS:
+		var id := String(entry["id"])
+		var level := world.bench_level(id)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		var name_label := card.line(String(entry["name"]), 16, Color("3a4239"))
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(name_label)
+		row.add_child(card.line("Lv.%d" % level, 14, Color("3a4239")))
+		var cost := card.line("满级" if level >= 3 else "%d 币" % (60 * level), 13)
+		cost.custom_minimum_size = Vector2(70, 0)
+		cost.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		row.add_child(cost)
+		var button := Button.new()
+		button.text = "升级"
+		button.disabled = level >= 3
+		button.custom_minimum_size = Vector2(88, 36)
+		_style_primary(button)
+		button.pressed.connect(func():
+			if world.upgrade_bench(id):
+				_toast("%s 升级到 Lv.%d" % [String(entry["name"]), world.bench_level(id)])
+				_on_upgrade()
+			else:
+				_toast("铜钱不足，或已满级。"))
+		row.add_child(button)
+		body.add_child(row)
+
+
+func _style_primary(button: Button) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color("374e3c")
+	normal.set_corner_radius_all(8)
+	var hover := normal.duplicate() as StyleBoxFlat
+	hover.bg_color = Color("4a6350")
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_stylebox_override("hover", hover)
+	button.add_theme_stylebox_override("pressed", hover)
+	button.add_theme_color_override("font_color", Color("faf6eb"))
+	button.add_theme_color_override("font_hover_color", Color("faf6eb"))
+	button.add_theme_color_override("font_disabled_color", Color("a8a89a"))
 
 
 func _on_map() -> void:
-	var lines := PackedStringArray()
+	var card := _card()
+	card.open("四方瓷韵 · 地图", "四站巡游")
+	var body := card.body()
 	for site in ContentPack.available_site_ids():
 		var data: Dictionary = Catalog.site(Catalog.load_catalog(), site)
-		lines.append("%s  %s" % ["●" if site == String(GameState.current_site_id()) else "○", String(data.get("short", site))])
-	_info("四方瓷韵 · 地图", "
-".join(lines) + "
-
-其余三站仍在布置中。")
+		var here := site == String(GameState.current_site_id())
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		row.add_child(card.line("●" if here else "○", 16, Color("bd8a3d") if here else Color("858678")))
+		var name_label := card.line(String(data.get("short", site)), 16, Color("3a4239"))
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(name_label)
+		row.add_child(card.line("营业中" if here else "布展中", 13))
+		body.add_child(row)
+	body.add_child(card.line("当前只开放古窑民俗，其余三站在后续版本解锁。", 12))
 
 
 func _on_help() -> void:
-	_info("操作说明", "W A S D / 方向键  移动
-F  操作
-左键拖拽  旋转视角 · 滚轮  缩放
-Esc  关闭面板
-C  打开瓷器图鉴")
-
-
-func _info(title: String, body: String) -> void:
-	var dialog := AcceptDialog.new()
-	dialog.title = title
-	dialog.dialog_text = body
-	dialog.ok_button_text = "知道了"
-	dialog.min_size = Vector2i(460, 220)
-	add_child(dialog)
-	dialog.popup_centered()
-	dialog.confirmed.connect(dialog.queue_free)
-	dialog.canceled.connect(dialog.queue_free)
+	var card := _card()
+	card.open("操作说明", "怎么玩")
+	var body := card.body()
+	for text in ["W A S D / 方向键    移动", "F    与工作台交互", "按住空格    烧窑时鼓风",
+			"左键拖拽    旋转视角", "滚轮    缩放", "C    打开瓷器图鉴", "Esc    关闭面板"]:
+		body.add_child(card.line(text, 14, Color("3a4239")))
 
 
 func _on_reset_view() -> void:
@@ -961,6 +1016,10 @@ func _toast(text: String) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _modal != null and _modal.visible and event.is_action_pressed("ui_cancel"):
+		_modal.close_card()
+		accept_event()
+		return
 	if codex != null and codex.visible and event.is_action_pressed("ui_cancel"):
 		codex.close_panel()
 		accept_event()

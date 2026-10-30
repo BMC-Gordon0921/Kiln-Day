@@ -44,6 +44,7 @@ var _serve_label: Label
 
 var _session: SculptSession
 var _kiln: KilnRun
+var _space_held := false
 var _station := ""
 var _order: Dictionary = {}
 var _data: Dictionary = {}
@@ -190,6 +191,7 @@ func _button(text: String, primary := false) -> Button:
 ## {has_clay, steps, fired, grade, session, kiln, passed}.
 func present(station: String, order: Dictionary, data: Dictionary) -> void:
 	_station = station
+	_space_held = false
 	_order = order
 	_data = data
 	if _close_button != null:
@@ -521,6 +523,7 @@ func _build_kiln() -> void:
 	right.add_child(button_row)
 	_stoke_button = _button("开始烧制（按住鼓风）", true)
 	_stoke_button.custom_minimum_size = Vector2(240, 46)
+	_stoke_button.focus_mode = Control.FOCUS_NONE
 	_stoke_button.button_down.connect(func(): stoke.emit(true))
 	_stoke_button.button_up.connect(func(): stoke.emit(false))
 	button_row.add_child(_stoke_button)
@@ -534,6 +537,10 @@ func tick(delta: float) -> void:
 			_kiln_icon.heat = 0.0 if _kiln.finished() else _kiln.heat
 		if not _kiln.finished():
 			_kiln.tick(delta)
+			var held := Input.is_physical_key_pressed(KEY_SPACE)
+			if held != _space_held:
+				_space_held = held
+				stoke.emit(held)
 			if _kiln_status != null:
 				_kiln_status.text = "热度 %.0f%% · 完美 %.1fs · 良好 %.1fs" % [
 					_kiln.heat * 100.0,
