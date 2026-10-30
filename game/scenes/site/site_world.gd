@@ -277,7 +277,8 @@ func upgrade_benches() -> bool:
 		return false
 	if not GameState.try_spend(60 * _bench_level):
 		return false
-	apply_bench_level(_bench_level + 1)
+	_bench_level += 1
+	apply_bench_level(_bench_level)
 	return true
 
 

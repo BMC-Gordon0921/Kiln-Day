@@ -256,6 +256,8 @@ func _start() -> void:
 			var target := SiteLayout.station(arg.substr(7))
 			if not target.is_empty():
 				_walk_target = target["approach"]
+		elif arg == "upgrade":
+			_on_upgrade()
 		elif arg == "resetprobe":
 			_probe_reset()
 		elif arg == "dragprobe":
