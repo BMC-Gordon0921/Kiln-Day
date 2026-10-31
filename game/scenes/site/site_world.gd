@@ -51,7 +51,6 @@ var _key_light: DirectionalLight3D
 var _fill_light: DirectionalLight3D
 var _bench_level := 1
 var _bench_levels: Dictionary = {}
-var range_scale := 1.0
 var hover_station := ""
 var preview_enabled := true
 var _forced_id := ""
@@ -64,8 +63,6 @@ var _bounds_found := false
 
 
 func _ready() -> void:
-	var meta: Dictionary = SaveGame.data.get("meta", {})
-	range_scale = clampf(float(meta.get("range_scale", 1.0)), 1.0, 1.8)
 	build()
 
 
@@ -245,13 +242,13 @@ func _build_preview() -> void:
 	_cursor.visible = false
 	content.add_child(_cursor)
 	_cursor_ring = SiteShapes.ring(_cursor, 0.16, 0.2, 28, Color("fdf6e4"), 0.95, 1.55)
-	_range_ring = SiteShapes.ring(_cursor, 0.965, 1.0, 64, Color(0.12, 0.3, 0.58, 0.85), 0.85, 0.28)
+	_range_ring = SiteShapes.ring(_cursor, 0.9, 1.0, 64, Color("e07a3c"), 1.0, 0.32)
 	_range_ring.name = "RangeRing"
 
 
-func station_radius(id: String) -> float:
-	var level := bench_level(id)
-	return (SiteLayout.INTERACT_RADIUS + 0.14 * float(level - 1)) * range_scale
+func station_radius(_id: String) -> float:
+	# 升级不扩大交互距离；这里只是玩家与工作台的交互判定范围。
+	return SiteLayout.INTERACT_RADIUS
 
 
 func nearest_station(x: float, z: float) -> Dictionary:

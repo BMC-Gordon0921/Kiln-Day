@@ -18,6 +18,8 @@ var _texture: ImageTexture
 var _ghost: Image
 var _ghost_texture: ImageTexture
 var _drawing := false
+var _hover := false
+var _mouse := Vector2.ZERO
 
 ## Theme hooks so the canvas can sit on paper instead of the dark workshop panel.
 var background := Color(0.08, 0.08, 0.09, 1.0)
@@ -27,10 +29,21 @@ var accent := Color("2f5d9e")
 
 
 func _ready() -> void:
+	mouse_exited.connect(_notify_exit)
 	custom_minimum_size = Vector2(DISPLAY_SIZE, DISPLAY_SIZE)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	focus_mode = Control.FOCUS_NONE
+
+
+func debug_cursor_at(point: Vector2) -> void:
+	_hover = true
+	_mouse = point
+	queue_redraw()
+
+
+func radius_for_tool() -> float:
+	return brush_radius * 3.0 if tool == "push" else brush_radius
 
 
 func set_session(p_session: SculptSession) -> void:
@@ -76,6 +89,11 @@ func _draw() -> void:
 		draw_texture_rect(_texture, rect, false)
 	if _ghost_texture != null:
 		draw_texture_rect(_ghost_texture, rect, false)
+	if _hover:
+		var scale := size.x / float(Sculpture.SIZE)
+		var radius := radius_for_tool() * scale
+		draw_arc(_mouse, radius, 0.0, TAU, 48, Color(0.14, 0.2, 0.16, 0.7), 5.0)
+		draw_arc(_mouse, radius, 0.0, TAU, 48, Color(1.0, 0.99, 0.93, 1.0), 2.2)
 	draw_rect(rect, Color(0.86, 0.82, 0.72, 0.55), false, 2.0)
 
 
@@ -95,9 +113,13 @@ func _gui_input(event: InputEvent) -> void:
 		else:
 			_end()
 		accept_event()
-	elif event is InputEventMouseMotion and _drawing:
-		_move(_to_canvas(event.position))
-		accept_event()
+	elif event is InputEventMouseMotion:
+		_hover = true
+		_mouse = event.position
+		queue_redraw()
+		if _drawing:
+			_move(_to_canvas(event.position))
+			accept_event()
 	elif event is InputEventScreenTouch:
 		if event.pressed:
 			_begin(_to_canvas(event.position))
@@ -109,9 +131,14 @@ func _gui_input(event: InputEvent) -> void:
 		accept_event()
 
 
+func _notify_exit() -> void:
+	_hover = false
+	queue_redraw()
+
+
 func _begin(point: Vector2) -> void:
 	_drawing = true
-	session.radius = 18.0 if tool == "push" else brush_radius
+	session.radius = radius_for_tool()
 	session.stroke_begin(point, tool)
 	refresh()
 	stroke_changed.emit()

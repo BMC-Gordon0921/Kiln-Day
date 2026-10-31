@@ -11,6 +11,7 @@ const NEEDLE := Color("b0603c")
 var run: KilnRun
 
 var _value: Label
+var display_heat := -1.0
 var _state: Label
 
 
@@ -44,7 +45,8 @@ func _process(_delta: float) -> void:
 	queue_redraw()
 	if run == null:
 		return
-	_value.text = "%d%%" % roundi(run.heat * 100.0)
+	var shown := display_heat if display_heat >= 0.0 else run.heat
+	_value.text = "%d%%" % roundi(shown * 100.0)
 	if run.finished():
 		_state.text = "烧制完成"
 	elif run.heat > 0.0:
@@ -65,7 +67,8 @@ func _draw() -> void:
 	var mid := run.band_center()
 	_band(center, radius, start, sweep, mid - float(band["good"]), mid + float(band["good"]), GOOD)
 	_band(center, radius, start, sweep, mid - float(band["perfect"]), mid + float(band["perfect"]), PERFECT)
-	var a := start + sweep * clampf(run.heat, 0.0, 1.0)
+	var shown := display_heat if display_heat >= 0.0 else run.heat
+	var a := start + sweep * clampf(shown, 0.0, 1.0)
 	var tip := center + Vector2(cos(a), sin(a)) * (radius - 14.0)
 	var tail := center + Vector2(cos(a), sin(a)) * (radius * 0.64)
 	draw_line(tail, tip, NEEDLE, 4.0, true)

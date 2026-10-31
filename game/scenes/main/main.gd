@@ -266,8 +266,9 @@ func _start() -> void:
 			ev.physical_keycode = KEY_SPACE
 			ev.pressed = true
 			Input.parse_input_event(ev)
-		elif arg.begins_with("range="):
-			world.range_scale = clampf(float(arg.substr(6)), 1.0, 1.8)
+		elif arg == "brush":
+			if sheet != null:
+				sheet.preview_brush_cursor()
 		elif arg.begins_with("preview="):
 			world.force_preview(arg.substr(8))
 		elif arg == "help":
@@ -759,31 +760,7 @@ func _on_upgrade() -> void:
 	card.open("工坊 · 升级", "工作台升级")
 	var body := card.body()
 	body.add_child(card.line("每台工作台单独升级，费用为 60 × 当前等级，最高 Lv.3。等级越高，可操作范围越大。", 13))
-	var range_row := HBoxContainer.new()
-	range_row.add_theme_constant_override("separation", 12)
-	var range_title := card.line("作用范围", 14, Color("3a4239"))
-	range_title.custom_minimum_size = Vector2(90, 0)
-	range_row.add_child(range_title)
-	var slider := HSlider.new()
-	slider.min_value = 1.0
-	slider.max_value = 1.8
-	slider.step = 0.05
-	slider.value = world.range_scale
-	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	slider.custom_minimum_size = Vector2(0, 28)
-	range_row.add_child(slider)
-	var value_label := card.line("%.2f×" % world.range_scale, 14, Color("3a4239"))
-	value_label.custom_minimum_size = Vector2(64, 0)
-	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	range_row.add_child(value_label)
-	slider.value_changed.connect(func(value: float):
-		world.range_scale = value
-		value_label.text = "%.2f×" % value
-		var meta: Dictionary = SaveGame.data.get("meta", {})
-		meta["range_scale"] = value
-		SaveGame.data["meta"] = meta
-		SaveGame.save_game())
-	body.add_child(range_row)
+
 	for entry in SiteLayout.STATIONS:
 		var id := String(entry["id"])
 		var level := world.bench_level(id)
@@ -886,6 +863,7 @@ func _open_station(id: String) -> void:
 		_start_kiln()
 	sheet.present(id, orders[order_index], {
 		"level": order_index + 1,
+		"bench_level": world.bench_level(id),
 		"preset_index": order_index,
 		"has_clay": world.player.has_clay,
 		"fired": fired,

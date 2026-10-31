@@ -45,6 +45,7 @@ var _serve_label: Label
 var _session: SculptSession
 var _kiln: KilnRun
 var _space_held := false
+var _kiln_started := false
 var _station := ""
 var _order: Dictionary = {}
 var _data: Dictionary = {}
@@ -192,6 +193,7 @@ func _button(text: String, primary := false) -> Button:
 func present(station: String, order: Dictionary, data: Dictionary) -> void:
 	_station = station
 	_space_held = false
+	_kiln_started = false
 	_order = order
 	_data = data
 	if _close_button != null:
@@ -357,13 +359,30 @@ func _build_sculpt(station: String) -> void:
 	ref_box.add_child(reference)
 	side.add_child(ref_box)
 	side.add_child(_label(_station_hint(station), 14, MUTED))
-	_score_bar = ProgressBar.new()
-	_score_bar.max_value = 80
-	_score_bar.show_percentage = false
-	_score_bar.custom_minimum_size = Vector2(0, 12)
-	side.add_child(_score_bar)
-	_score_label = _label("", 14, TEXT)
-	side.add_child(_score_label)
+
+	var brush_row := HBoxContainer.new()
+	brush_row.add_theme_constant_override("separation", 10)
+	var bench_level := int(_data.get("bench_level", 1))
+	brush_row.add_child(_label("笔刷范围 Lv.%d" % bench_level, 13, MUTED))
+	var brush := HSlider.new()
+	brush.min_value = 3.0
+	brush.max_value = 18.0 + 6.0 * float(bench_level - 1)
+	brush.step = 1.0
+	brush.value = _canvas.brush_radius
+	brush.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	brush.custom_minimum_size = Vector2(0, 26)
+	brush_row.add_child(brush)
+	var brush_value := _label("%d" % int(_canvas.brush_radius), 13, MUTED)
+	brush_value.custom_minimum_size = Vector2(26, 0)
+	brush_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	brush_row.add_child(brush_value)
+	brush.value_changed.connect(func(value: float):
+		_canvas.brush_radius = value
+		brush_value.text = "%d" % int(value)
+		if _session != null:
+			_session.radius = _canvas.radius_for_tool()
+		_canvas.queue_redraw())
+	side.add_child(brush_row)
 
 	var tools := HBoxContainer.new()
 	tools.add_theme_constant_override("separation", 6)
@@ -425,13 +444,8 @@ func _do_action(kind: String) -> void:
 
 
 func _refresh_score() -> void:
-	if _session == null or _score_bar == null:
-		return
-	var result := _session.score()
-	_score_bar.value = float(result["score"])
-	_score_label.text = "当前评分 %.1f / 80（通过线 60）" % float(result["score"])
-	_score_label.add_theme_color_override("font_color",
-		TEXT if bool(result["passed"]) else Color("b0603c"))
+	# 评分只在交付结算时展示，制作过程中不剧透。
+	pass
 
 
 func _station_hint(station: String) -> String:
@@ -546,12 +560,29 @@ func _build_kiln() -> void:
 
 	var button_row := HBoxContainer.new()
 	right.add_child(button_row)
-	_stoke_button = _button("开始烧制（按住鼓风）", true)
+	_stoke_button = _button("开始烧制（空格或点击）", true)
 	_stoke_button.custom_minimum_size = Vector2(240, 46)
 	_stoke_button.focus_mode = Control.FOCUS_NONE
-	_stoke_button.button_down.connect(func(): stoke.emit(true))
+	_stoke_button.button_down.connect(_press_stoke)
 	_stoke_button.button_up.connect(func(): stoke.emit(false))
 	button_row.add_child(_stoke_button)
+
+
+func preview_brush_cursor() -> void:
+	if _canvas != null:
+		_canvas.debug_cursor_at(Vector2(280, 250))
+
+
+func _press_stoke() -> void:
+	if not _kiln_started:
+		_kiln_started = true
+		if _kiln != null:
+			_kiln.heat = 0.0
+		if _heat != null:
+			_heat.display_heat = -1.0
+		if _stoke_button != null:
+			_stoke_button.text = "鼓风（按住）"
+	stoke.emit(true)
 
 
 func tick(delta: float) -> void:
@@ -560,12 +591,20 @@ func tick(delta: float) -> void:
 	if _station == "kiln" and _kiln != null:
 		if _kiln_icon != null:
 			_kiln_icon.heat = 0.0 if _kiln.finished() else _kiln.heat
-		if not _kiln.finished():
+		var held := Input.is_physical_key_pressed(KEY_SPACE)
+		if held != _space_held:
+			_space_held = held
+			if held:
+				_press_stoke()
+			else:
+				stoke.emit(false)
+		if not _kiln_started:
+			if _kiln_status != null:
+				_kiln_status.text = "按空格或点击，开始烧制"
+			if _heat != null:
+				_heat.display_heat = 0.0
+		elif not _kiln.finished():
 			_kiln.tick(delta)
-			var held := Input.is_physical_key_pressed(KEY_SPACE)
-			if held != _space_held:
-				_space_held = held
-				stoke.emit(held)
 			if _kiln_status != null:
 				_kiln_status.text = "热度 %.0f%% · 完美 %.1fs · 良好 %.1fs" % [
 					_kiln.heat * 100.0,
