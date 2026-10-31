@@ -297,6 +297,17 @@ func _build_clay() -> void:
 # --- 拉坯 / 雕刻 / 上色 ----------------------------------------------------
 
 
+func _site_accent() -> Color:
+	match String(GameState.current_site_id()):
+		"museum":
+			return Color("4a6b8a")
+		"yaoli":
+			return Color("7a5a3a")
+		"taoxichuan":
+			return Color("c86f92")
+	return Color("2f5d9e")
+
+
 func _build_sculpt(station: String) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 22)
@@ -314,6 +325,7 @@ func _build_sculpt(station: String) -> void:
 	frame.add_theme_stylebox_override("panel", box)
 	row.add_child(frame)
 	_canvas = SculptCanvas.new()
+	_canvas.accent = _site_accent()
 	_canvas.background = Color("f3ecd9")
 	_canvas.empty_color = Color("e2d6ba")
 	_canvas.custom_minimum_size = Vector2(410, 410)
@@ -356,7 +368,20 @@ func _build_sculpt(station: String) -> void:
 	var tools := HBoxContainer.new()
 	tools.add_theme_constant_override("separation", 6)
 	side.add_child(tools)
-	for tool in [["cut", "刮刀"], ["add", "补泥"], ["paint", "画笔"]]:
+	var available: Array = []
+	match _station:
+		"wheel":
+			available = [["push", "推泥"], ["add", "补泥"]]
+		"carve":
+			available = [["cut", "刮刀"]]
+		"paint":
+			available = [["paint", "画笔"]]
+		_:
+			available = [["cut", "刮刀"], ["add", "补泥"], ["paint", "画笔"]]
+	if not available.is_empty():
+		_canvas.tool = String(available[0][0])
+		_session.radius = 18.0 if _canvas.tool == "push" else _canvas.brush_radius
+	for tool in available:
 		var button := _button(String(tool[1]))
 		button.custom_minimum_size = Vector2(0, 34)
 		button.pressed.connect(func():

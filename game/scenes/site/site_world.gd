@@ -51,12 +51,21 @@ var _key_light: DirectionalLight3D
 var _fill_light: DirectionalLight3D
 var _bench_level := 1
 var _bench_levels: Dictionary = {}
+var range_scale := 1.0
+var hover_station := ""
+var preview_enabled := true
+var _forced_id := ""
+var _cursor: Node3D
+var _cursor_ring: MeshInstance3D
+var _range_ring: MeshInstance3D
 var _bench_tiers := {}
 var _bounds := AABB()
 var _bounds_found := false
 
 
 func _ready() -> void:
+	var meta: Dictionary = SaveGame.data.get("meta", {})
+	range_scale = clampf(float(meta.get("range_scale", 1.0)), 1.0, 1.8)
 	build()
 
 
@@ -75,6 +84,7 @@ func build() -> void:
 	_build_smoke()
 	_build_player()
 	_build_hint()
+	_build_preview()
 	_build_camera()
 	if camera:
 		camera.apply()
@@ -226,6 +236,112 @@ func _build_smoke() -> void:
 func _process(delta: float) -> void:
 	if smoke:
 		smoke.update_world(delta, 0.78)
+	_update_preview()
+
+
+func _build_preview() -> void:
+	_cursor = Node3D.new()
+	_cursor.name = "BenchCursor"
+	_cursor.visible = false
+	content.add_child(_cursor)
+	_cursor_ring = SiteShapes.ring(_cursor, 0.16, 0.2, 28, Color("fdf6e4"), 0.95, 1.55)
+	_range_ring = SiteShapes.ring(_cursor, 0.965, 1.0, 64, Color(0.12, 0.3, 0.58, 0.85), 0.85, 0.28)
+	_range_ring.name = "RangeRing"
+
+
+func station_radius(id: String) -> float:
+	var level := bench_level(id)
+	return (SiteLayout.INTERACT_RADIUS + 0.14 * float(level - 1)) * range_scale
+
+
+func nearest_station(x: float, z: float) -> Dictionary:
+	var best: Dictionary = {}
+	var best_distance := INF
+	for entry in SiteLayout.STATIONS:
+		var dx: float = maxf(absf(x - entry["x"]) - entry["w"] * 0.5, 0.0)
+		var dz: float = maxf(absf(z - entry["z"]) - entry["d"] * 0.5, 0.0)
+		var distance := sqrt(dx * dx + dz * dz)
+		if distance < station_radius(String(entry["id"])) and distance < best_distance:
+			best = entry
+			best_distance = distance
+	return best
+
+
+func force_preview(id: String) -> void:
+	_forced_id = id
+	if _cursor == null:
+		return
+	var entry := SiteLayout.station(id)
+	if entry.is_empty():
+		return
+	preview_enabled = true
+	hover_station = id
+	_cursor.visible = true
+	_cursor.position = Vector3(float(entry["x"]), 0.0, float(entry["z"]))
+	var radius := station_radius(id) + 0.4
+	_range_ring.scale = Vector3(radius, 1.0, radius)
+
+
+func set_preview_enabled(value: bool) -> void:
+	preview_enabled = value
+	if not value and _cursor != null:
+		_cursor.visible = false
+
+
+func _show_station(entry: Dictionary) -> void:
+	hover_station = String(entry["id"])
+	_cursor.visible = true
+	_cursor.position = Vector3(float(entry["x"]), 0.0, float(entry["z"]))
+	var radius := station_radius(String(entry["id"])) + 0.4
+	_range_ring.scale = Vector3(radius, 1.0, radius)
+	_cursor_ring.scale = Vector3.ONE * (1.0 + 0.06 * sin(Time.get_ticks_msec() * 0.006))
+
+
+func _update_preview() -> void:
+	if _cursor == null or not preview_enabled:
+		return
+	if _forced_id != "":
+		force_preview(_forced_id)
+		return
+	if player != null:
+		var near := nearest_station(player.position2d.x, player.position2d.y)
+		if not near.is_empty():
+			_show_station(near)
+			Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+			return
+	var camera := get_viewport().get_camera_3d()
+	if camera == null:
+		_cursor.visible = false
+		return
+	var mouse := get_viewport().get_mouse_position()
+	var rect := get_viewport().get_visible_rect()
+	if not rect.has_point(mouse):
+		_cursor.visible = false
+		hover_station = ""
+		return
+	var from := camera.project_ray_origin(mouse)
+	var dir := camera.project_ray_normal(mouse)
+	var hit = Plane(Vector3.UP, 0.0).intersects_ray(from, dir)
+	if hit == null:
+		_cursor.visible = false
+		return
+	var point: Vector3 = hit
+	var found: Dictionary = {}
+	var best := INF
+	for entry in SiteLayout.STATIONS:
+		var dx: float = maxf(absf(point.x - entry["x"]) - entry["w"] * 0.5, 0.0)
+		var dz: float = maxf(absf(point.z - entry["z"]) - entry["d"] * 0.5, 0.0)
+		var distance := sqrt(dx * dx + dz * dz)
+		if distance < 0.35 and distance < best:
+			found = entry
+			best = distance
+	if found.is_empty():
+		_cursor.visible = false
+		hover_station = ""
+		Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+		return
+	_show_station(found)
+	Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND)
 
 
 func _build_player() -> void:

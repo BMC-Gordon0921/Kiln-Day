@@ -19,6 +19,7 @@ Events="*res://autoload/Events.gd"
 Settings="*res://autoload/Settings.gd"
 SaveGame="*res://autoload/SaveGame.gd"
 GameState="*res://autoload/GameState.gd"
+Audio="*res://autoload/audio.gd"
 
 [display]
 

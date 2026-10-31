@@ -160,7 +160,9 @@ func _build_hud() -> void:
 	site_hud.upgrade_requested.connect(_on_upgrade)
 	site_hud.map_requested.connect(_on_map)
 	site_hud.help_requested.connect(_on_help)
-	site_hud.music_requested.connect(func(): _toast("音频系统尚未接入，将在音乐模块上线后开放。"))
+	site_hud.music_requested.connect(func():
+		var now_muted := Audio.toggle_mute()
+		_toast("背景音乐已关闭" if now_muted else "背景音乐已开启"))
 	site_hud.lang_requested.connect(func(): _toast("English 版正在制作中。"))
 	site_hud.name = "SiteHUD"
 	ui_root.add_child(site_hud)
@@ -182,6 +184,7 @@ func _build_hud() -> void:
 	sheet.finish_step.connect(_on_finish_step)
 	sheet.stoke.connect(_on_stoke)
 	sheet.deliver.connect(_on_deliver)
+	sheet.closed.connect(func(): Audio.set_fire(false))
 	sheet.next_round.connect(_on_next_round)
 
 
@@ -263,6 +266,10 @@ func _start() -> void:
 			ev.physical_keycode = KEY_SPACE
 			ev.pressed = true
 			Input.parse_input_event(ev)
+		elif arg.begins_with("range="):
+			world.range_scale = clampf(float(arg.substr(6)), 1.0, 1.8)
+		elif arg.begins_with("preview="):
+			world.force_preview(arg.substr(8))
 		elif arg == "help":
 			_on_help()
 		elif arg == "map":
@@ -512,6 +519,8 @@ func _process(delta: float) -> void:
 	if world == null or world.player == null or world.camera == null:
 		return
 	_elapsed += delta
+	var blocked := (sheet != null and sheet.visible) or (codex != null and codex.visible) or (_modal != null and _modal.visible)
+	world.set_preview_enabled(not blocked)
 	if sheet != null and sheet.visible:
 		sheet.tick(delta)
 		if kiln != null and kiln.finished() and not fired:
@@ -580,7 +589,7 @@ func _update_prompt() -> void:
 		return
 	if world.player != null and world.player.moving:
 		_moved = true
-	var nearest := SiteLayout.nearest(world.player.position2d.x, world.player.position2d.y)
+	var nearest := world.nearest_station(world.player.position2d.x, world.player.position2d.y)
 	if nearest.is_empty() or not _moved:
 		if prompt.visible:
 			prompt.visible = false
@@ -749,7 +758,32 @@ func _on_upgrade() -> void:
 	var card := _card()
 	card.open("工坊 · 升级", "工作台升级")
 	var body := card.body()
-	body.add_child(card.line("每台工作台单独升级，费用为 60 × 当前等级，最高 Lv.3。", 13))
+	body.add_child(card.line("每台工作台单独升级，费用为 60 × 当前等级，最高 Lv.3。等级越高，可操作范围越大。", 13))
+	var range_row := HBoxContainer.new()
+	range_row.add_theme_constant_override("separation", 12)
+	var range_title := card.line("作用范围", 14, Color("3a4239"))
+	range_title.custom_minimum_size = Vector2(90, 0)
+	range_row.add_child(range_title)
+	var slider := HSlider.new()
+	slider.min_value = 1.0
+	slider.max_value = 1.8
+	slider.step = 0.05
+	slider.value = world.range_scale
+	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slider.custom_minimum_size = Vector2(0, 28)
+	range_row.add_child(slider)
+	var value_label := card.line("%.2f×" % world.range_scale, 14, Color("3a4239"))
+	value_label.custom_minimum_size = Vector2(64, 0)
+	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	range_row.add_child(value_label)
+	slider.value_changed.connect(func(value: float):
+		world.range_scale = value
+		value_label.text = "%.2f×" % value
+		var meta: Dictionary = SaveGame.data.get("meta", {})
+		meta["range_scale"] = value
+		SaveGame.data["meta"] = meta
+		SaveGame.save_game())
+	body.add_child(range_row)
 	for entry in SiteLayout.STATIONS:
 		var id := String(entry["id"])
 		var level := world.bench_level(id)
@@ -770,6 +804,7 @@ func _on_upgrade() -> void:
 		_style_primary(button)
 		button.pressed.connect(func():
 			if world.upgrade_bench(id):
+				Audio.play("confirm")
 				_toast("%s 升级到 Lv.%d" % [String(entry["name"]), world.bench_level(id)])
 				_on_upgrade()
 			else:
@@ -840,8 +875,13 @@ func _open_codex() -> void:
 
 
 func _open_station(id: String) -> void:
-	if session == null or not _can_work(id):
+	if session == null:
 		return
+	if not _can_work(id):
+		Audio.play("click")
+		_toast(_gate_reason(id), true)
+		return
+	world.set_preview_enabled(false)
 	if id == "kiln" and kiln == null:
 		_start_kiln()
 	sheet.present(id, orders[order_index], {
@@ -856,6 +896,17 @@ func _open_station(id: String) -> void:
 		"elapsed": session.elapsed_ms,
 		"income": _income_preview(session.score()),
 	})
+
+
+func _gate_reason(id: String) -> String:
+	match id:
+		"wheel", "carve", "paint":
+			return "先去取泥台领取瓷泥，再来这一步。"
+		"kiln":
+			return "还没上色：先完成「手绘上色」。"
+		"serve":
+			return "这一单还没烧制，先把瓷器入窑。"
+	return "现在还做不了这一步。"
 
 
 func _income_preview(result: Dictionary) -> Dictionary:
@@ -924,6 +975,7 @@ func _on_take_clay() -> void:
 	steps["clay"] = true
 	_guide_step = -1
 	_update_guide()
+	Audio.play("coin")
 	_toast("瓷泥到手 · 去「粗塑成形」台")
 
 
@@ -931,10 +983,12 @@ func _on_finish_step(id: String) -> void:
 	steps[id] = true
 	_guide_step = -1
 	_update_guide()
+	Audio.play("confirm")
 	_toast("「%s」完成" % String(SiteLayout.station(id).get("name", id)))
 
 
 func _on_stoke(started: bool) -> void:
+	Audio.set_fire(started)
 	if kiln == null or kiln.finished():
 		return
 	kiln.stoking = started
@@ -959,6 +1013,7 @@ func _on_deliver() -> void:
 		"firstPass": first_pass,
 	})
 	GameState.add_coins(int(income["earned"]))
+	Audio.play("coin")
 	GameState.discover(StringName(String(order["id"])))
 	SaveGame.save_game()
 	Events.sculpture_finished.emit(result)
@@ -984,34 +1039,37 @@ func _on_next_round() -> void:
 	_start_order()
 
 
-func _toast(text: String) -> void:
+func _toast(text: String, warn := false) -> void:
 	if hud_layer == null:
 		return
 	if _toast_label == null:
 		_toast_label = Label.new()
 		_toast_label.name = "Toast"
 		_toast_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-		_toast_label.offset_top = -140
-		_toast_label.offset_bottom = -104
-		_toast_label.offset_left = -260
-		_toast_label.offset_right = 260
+		_toast_label.offset_top = -156
+		_toast_label.offset_bottom = -108
+		_toast_label.offset_left = -380
+		_toast_label.offset_right = 380
 		_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_toast_label.add_theme_font_size_override("font_size", 16)
+		_toast_label.add_theme_font_size_override("font_size", 21)
 		_toast_label.add_theme_color_override("font_color", Color("fdfaf1"))
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color(0.216, 0.275, 0.235, 0.94)
 		style.set_corner_radius_all(10)
-		style.content_margin_left = 18
-		style.content_margin_right = 18
-		style.content_margin_top = 8
-		style.content_margin_bottom = 8
+		style.content_margin_left = 26
+		style.content_margin_right = 26
+		style.content_margin_top = 12
+		style.content_margin_bottom = 12
 		_toast_label.add_theme_stylebox_override("normal", style)
 		hud_layer.add_child(_toast_label)
+	var box := _toast_label.get_theme_stylebox("normal") as StyleBoxFlat
+	if box != null:
+		box.bg_color = Color("7c4426") if warn else Color(0.216, 0.275, 0.235, 0.94)
 	_toast_label.text = text
 	_toast_label.visible = true
 	_toast_label.modulate.a = 1.0
 	var tween := create_tween()
-	tween.tween_interval(2.4)
+	tween.tween_interval(3.0)
 	tween.tween_property(_toast_label, "modulate:a", 0.0, 0.5)
 
 

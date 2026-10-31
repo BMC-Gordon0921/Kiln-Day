@@ -22,6 +22,8 @@ var _drawing := false
 ## Theme hooks so the canvas can sit on paper instead of the dark workshop panel.
 var background := Color(0.08, 0.08, 0.09, 1.0)
 var empty_color := Color(0.13, 0.12, 0.12, 1.0)
+## Dashed guide outline colour: cobalt for the kiln yard, rose for Taoxichuan.
+var accent := Color("2f5d9e")
 
 
 func _ready() -> void:
@@ -37,9 +39,17 @@ func set_session(p_session: SculptSession) -> void:
 	_texture = ImageTexture.create_from_image(_image)
 	_ghost = Image.create(Sculpture.SIZE, Sculpture.SIZE, false, Image.FORMAT_RGBA8)
 	_ghost.fill(Color(0, 0, 0, 0))
+	var size: int = Sculpture.SIZE
 	for i in session.target.size():
-		if session.target[i] != 0:
-			_ghost.set_pixel(i % Sculpture.SIZE, i / Sculpture.SIZE, Color(0.45, 0.85, 1.0, 0.30))
+		if session.target[i] == 0:
+			continue
+		var x := i % size
+		var y := i / size
+		var edge := x == 0 or y == 0 or x == size - 1 or y == size - 1
+		if not edge:
+			edge = session.target[i - 1] == 0 or session.target[i + 1] == 0 				or session.target[i - size] == 0 or session.target[i + size] == 0
+		if edge and (x + y) % 8 < 4:
+			_ghost.set_pixel(x, y, Color(accent.r, accent.g, accent.b, 0.72))
 	_ghost_texture = ImageTexture.create_from_image(_ghost)
 	refresh()
 
